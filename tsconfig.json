@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "jsx": "react",
+        "target": "es6",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "sourceMap": true,
+        "rootDir": "./src",
+        "outDir": "./dist",
+        "baseUrl": ".",
+        "esModuleInterop": true,
+        "strict": true,
+        "paths": {
+            "@/*": ["src/*"],
+        }
+    }
+}
