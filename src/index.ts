@@ -1,5 +1,5 @@
 import { Camera } from './Camera';
-import GameMap from "./GameMap"
+import { GameMap } from "./GameMap"
 import {Player} from "./Player"
 import "../styles/styles.scss"
 import showFPS from "./utils/showFPS"
@@ -38,7 +38,7 @@ const GameLoop = () => {
         currentfps++
     }
 
-    player.movement()
+    player.movement(map)
     camera.setPosition(player.X, player.Y)
     map.renderMap(ctx,camera)
     player.draw(ctx,camera)

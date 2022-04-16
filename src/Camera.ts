@@ -26,6 +26,5 @@ export class Camera implements ICamera{
     setPosition(x:number,y:number) {
         this.X = x
         this.Y = y
-        console.log("x = " + this.X + " Y = " + this.Y)
     }
 }

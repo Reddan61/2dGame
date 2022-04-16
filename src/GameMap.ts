@@ -1,11 +1,22 @@
 import { ICamera } from './Camera';
 import {IPlayer} from "@/Player"
 
-class GameMap {
+export interface IGameMap {
+    TILESIZE:number
+    mapW:number
+    mapH:number
+    text_map: number[][]
+    world_map: [number,number][][]
+
+    convertTextMapToWorldMap: (player:IPlayer) => void
+    renderMap: (ctx:CanvasRenderingContext2D,camera:ICamera) => void
+    canIMove: (x:number,y:number,newX:number,newY:number, movingObjectColisionSize:number) => boolean
+}
+
+export class GameMap implements IGameMap {
     TILESIZE:number
     mapW = 10
     mapH = 10
-    firstRender = true
     text_map = [
         [1,1,1,1,1,1,1,1,1,1],
         [1,2,1,0,0,0,0,0,0,1],
@@ -59,7 +70,27 @@ class GameMap {
         }
     }
 
+    canIMove(x:number,y:number,newX:number,newY:number, movingObjectColisionSize:number)  {
+        let canMove = true
+        const leftTopX = newX - movingObjectColisionSize
+        const leftTopY = newY - movingObjectColisionSize
+
+       // const speed = Math.abs(newX - x) || Math.abs(newY - y)
+
+        const arr =[]
+        for(let j = 0; j < this.world_map.length; j++) {
+            for(let i = 0; i < this.world_map[j].length; i++) {
+                if(
+                    leftTopX < this.world_map[j][i][0] + this.TILESIZE  && leftTopX + (movingObjectColisionSize*2)  > this.world_map[j][i][0] &&
+		            leftTopY < this.world_map[j][i][1] + this.TILESIZE && leftTopY + (movingObjectColisionSize*2) > this.world_map[j][i][1]
+                ) {
+                    arr.push(this.world_map[j][i])
+                    canMove = false
+                }
+            }
+        }
+        
+        return canMove
+    }
+
 }
-
-
-export default GameMap

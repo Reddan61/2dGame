@@ -1,3 +1,4 @@
+import { IGameMap } from './GameMap';
 import { ICamera } from './Camera';
 export interface IPlayer {
     X:number,
@@ -14,7 +15,7 @@ export interface IPlayer {
 
     setPressedKey:(keyCode:string) => void
     setunPressedKey:(keyCode:string) => void
-    movement:() => void
+    movement:(map: IGameMap) => void
 }
 
 
@@ -58,18 +59,22 @@ export class Player implements IPlayer{
         this.movementKeys[keyCode] = false
     }
 
-    movement() {
+    movement(map: IGameMap) {
         if(this.movementKeys.KeyW) {
-            this.setPosition(this.X,this.Y -= this.SPEED)
+            if(map.canIMove(this.X,this.Y, this.X,this.Y - this.SPEED,this.RADIUS))
+                this.setPosition(this.X,this.Y -= this.SPEED)
         }
         if(this.movementKeys.KeyS) {
-            this.setPosition(this.X,this.Y += this.SPEED)
+            if(map.canIMove(this.X,this.Y, this.X,this.Y + this.SPEED,this.RADIUS))
+                this.setPosition(this.X,this.Y += this.SPEED)
         }
         if(this.movementKeys.KeyD) {
-            this.setPosition(this.X += this.SPEED,this.Y)
+            if(map.canIMove(this.X,this.Y, this.X + this.SPEED,this.Y,this.RADIUS))
+                this.setPosition(this.X += this.SPEED,this.Y)
         }
         if(this.movementKeys.KeyA) {
-            this.setPosition(this.X -= this.SPEED,this.Y)
+            if(map.canIMove(this.X,this.Y, this.X - this.SPEED,this.Y,this.RADIUS))
+                this.setPosition(this.X -= this.SPEED,this.Y)
         }
     }
 }
