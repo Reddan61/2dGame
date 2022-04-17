@@ -61,20 +61,20 @@ export class Player implements IPlayer{
 
     movement(map: IGameMap) {
         if(this.movementKeys.KeyW) {
-            if(map.canIMove(this.X,this.Y, this.X,this.Y - this.SPEED,this.RADIUS))
-                this.setPosition(this.X,this.Y -= this.SPEED)
+            const speed = map.returnNewSpeed(this.X,this.Y, this.X,this.Y - this.SPEED,this.RADIUS) 
+                this.setPosition(this.X,this.Y + speed)
         }
         if(this.movementKeys.KeyS) {
-            if(map.canIMove(this.X,this.Y, this.X,this.Y + this.SPEED,this.RADIUS))
-                this.setPosition(this.X,this.Y += this.SPEED)
+            const speed = map.returnNewSpeed(this.X,this.Y, this.X,this.Y + this.SPEED,this.RADIUS) 
+                this.setPosition(this.X,this.Y += speed)
         }
         if(this.movementKeys.KeyD) {
-            if(map.canIMove(this.X,this.Y, this.X + this.SPEED,this.Y,this.RADIUS))
-                this.setPosition(this.X += this.SPEED,this.Y)
+            const speed = map.returnNewSpeed(this.X,this.Y, this.X + this.SPEED,this.Y,this.RADIUS) 
+                this.setPosition(this.X += speed,this.Y)
         }
         if(this.movementKeys.KeyA) {
-            if(map.canIMove(this.X,this.Y, this.X - this.SPEED,this.Y,this.RADIUS))
-                this.setPosition(this.X -= this.SPEED,this.Y)
+            const speed = map.returnNewSpeed(this.X,this.Y, this.X - this.SPEED,this.Y,this.RADIUS) 
+                this.setPosition(this.X += speed,this.Y)
         }
     }
 }

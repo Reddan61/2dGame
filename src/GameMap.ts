@@ -10,22 +10,24 @@ export interface IGameMap {
 
     convertTextMapToWorldMap: (player:IPlayer) => void
     renderMap: (ctx:CanvasRenderingContext2D,camera:ICamera) => void
-    canIMove: (x:number,y:number,newX:number,newY:number, movingObjectColisionSize:number) => boolean
+    returnNewSpeed: (x:number,y:number,newX:number,newY:number, movingObjectColisionSize:number) => number
 }
 
 export class GameMap implements IGameMap {
     TILESIZE:number
     mapW = 10
     mapH = 10
+    //1-wall
+    //2-player
     text_map = [
         [1,1,1,1,1,1,1,1,1,1],
-        [1,2,1,0,0,0,0,0,0,1],
-        [1,0,0,0,0,0,0,0,0,1],
+        [1,2,1,0,1,0,0,1,0,1],
+        [1,0,1,0,0,0,0,0,0,1],
+        [1,0,1,0,0,0,0,1,0,1],
+        [1,0,1,1,1,1,0,1,0,1],
         [1,0,0,0,0,0,0,1,0,1],
+        [1,1,1,1,0,1,1,1,0,1],
         [1,0,0,0,0,0,0,0,0,1],
-        [1,0,0,0,0,0,0,0,0,1],
-        [1,0,0,0,0,0,0,0,0,1],
-        [1,0,0,0,0,0,0,0,1,1],
         [1,0,0,0,0,0,0,0,0,1],
         [1,1,1,1,1,1,1,1,1,1]
     ]
@@ -70,27 +72,45 @@ export class GameMap implements IGameMap {
         }
     }
 
-    canIMove(x:number,y:number,newX:number,newY:number, movingObjectColisionSize:number)  {
-        let canMove = true
+    returnNewSpeed(x:number,y:number,newX:number,newY:number, movingObjectColisionSize:number)  {
         const leftTopX = newX - movingObjectColisionSize
         const leftTopY = newY - movingObjectColisionSize
+      
+        const speedX = newX - x
+        const speedY = newY - y
 
-       // const speed = Math.abs(newX - x) || Math.abs(newY - y)
+        let newSpeed = speedX || speedY
 
-        const arr =[]
         for(let j = 0; j < this.world_map.length; j++) {
             for(let i = 0; i < this.world_map[j].length; i++) {
                 if(
                     leftTopX < this.world_map[j][i][0] + this.TILESIZE  && leftTopX + (movingObjectColisionSize*2)  > this.world_map[j][i][0] &&
 		            leftTopY < this.world_map[j][i][1] + this.TILESIZE && leftTopY + (movingObjectColisionSize*2) > this.world_map[j][i][1]
                 ) {
-                    arr.push(this.world_map[j][i])
-                    canMove = false
+                    const wall = this.world_map[j][i]
+                    //wall on the left
+                    if(wall[0] < leftTopX && speedX) {
+                        newSpeed = (wall[0] + this.TILESIZE) - leftTopX + speedX
+                        console.log('da')
+                    }
+                    //wall on the right
+                    if(wall[0] > leftTopX && speedX) {
+                        newSpeed = wall[0] - (leftTopX + movingObjectColisionSize*2) + speedX
+                    }
+                    //wall from above
+                    if(wall[1] < leftTopY && speedY) {
+                        newSpeed = (wall[1] + this.TILESIZE) - leftTopY + speedY
+                    }
+                    //wall from below
+                    if(wall[1] > leftTopY && speedY) {
+                        newSpeed = wall[1] - (leftTopY + movingObjectColisionSize*2) + speedY
+                    }
+                   
                 }
             }
         }
         
-        return canMove
+        return newSpeed
     }
 
 }
