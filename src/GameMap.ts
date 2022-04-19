@@ -1,5 +1,7 @@
+import { IEnemyController } from './EnemyController';
 import { ICamera } from './Camera';
 import {IPlayer} from "@/Player"
+import { Enemy } from './Enemy';
 
 export interface IGameMap {
     TILESIZE:number
@@ -7,8 +9,9 @@ export interface IGameMap {
     mapH:number
     text_map: number[][]
     world_map: [number,number][][]
+    empty_tile: ([number,number]|null)[][]
 
-    convertTextMapToWorldMap: (player:IPlayer) => void
+    convertTextMapToWorldMap: (player:IPlayer, enemyController: IEnemyController) => void
     renderMap: (ctx:CanvasRenderingContext2D,camera:ICamera) => void
     returnNewSpeed: (x:number,y:number,newX:number,newY:number, movingObjectColisionSize:number) => number
 }
@@ -19,35 +22,50 @@ export class GameMap implements IGameMap {
     mapH = 10
     //1-wall
     //2-player
+    //3-enemy
     text_map = [
-        [1,1,1,1,1,1,1,1,1,1],
-        [1,2,1,0,1,0,0,1,0,1],
-        [1,0,1,0,0,0,0,0,0,1],
-        [1,0,1,0,0,0,0,1,0,1],
-        [1,0,1,1,1,1,0,1,0,1],
-        [1,0,0,0,0,0,0,1,0,1],
-        [1,1,1,1,0,1,1,1,0,1],
-        [1,0,0,0,0,0,0,0,0,1],
-        [1,0,0,0,0,0,0,0,0,1],
-        [1,1,1,1,1,1,1,1,1,1]
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        [1,3,1,0,1,0,0,1,0,1,1,0,0,0,0,0,0,0,1],
+        [1,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,1],
+        [1,0,1,0,0,0,0,1,0,1,1,0,0,0,1,1,0,0,1],
+        [1,0,1,0,1,1,0,1,0,1,1,0,0,0,1,1,0,0,1],
+        [1,0,0,0,0,0,0,1,0,1,1,0,0,0,1,1,0,0,1],
+        [1,1,1,1,0,1,1,1,0,1,1,0,0,0,0,1,1,0,1],
+        [1,0,0,0,0,0,0,0,0,1,1,1,1,1,0,1,1,0,1],
+        [1,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,1],
+        [1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,0,1,1],
+        [1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0,1,1],
+        [1,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,1],
+        [1,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
     ]
 
     world_map = [] as [number,number][][]
+    empty_tile = [] as ([number,number]|null)[][]
     constructor(TILESIZE:number) {
         this.TILESIZE = TILESIZE
     }
 
-    convertTextMapToWorldMap(player:IPlayer) {
+    convertTextMapToWorldMap(player:IPlayer, enemyController: IEnemyController) {
         const startCords = [0,0]
 
         for(let y = 0; y < this.text_map.length; y++) {
             this.world_map[y] = []
+            this.empty_tile[y] = []
             for(let x = 0; x < this.text_map[y].length; x++) {
+                if(this.text_map[y][x] !== 1) {
+                    this.empty_tile[y].push([startCords[0],startCords[1]])
+                }
                 if(this.text_map[y][x] === 1) {
                     this.world_map[y].push([startCords[0],startCords[1]])
+                    this.empty_tile[y].push(null)
                 }
                 if(this.text_map[y][x] === 2) {
                     player.setPosition(startCords[0] + this.TILESIZE / 2,startCords[1] + this.TILESIZE / 2)
+                }
+                if(this.text_map[y][x] === 3) {
+                    enemyController.EnemyArray.push(new Enemy(startCords[0] + this.TILESIZE / 2,startCords[1] + this.TILESIZE / 2,30,"red",3))
                 }
                 startCords[0] += this.TILESIZE
             }
@@ -55,6 +73,7 @@ export class GameMap implements IGameMap {
             startCords[0] = 0 
         }
         console.log(this.world_map)
+        console.log(this.empty_tile)
     }
 
     renderMap(ctx:CanvasRenderingContext2D,camera:ICamera) {
@@ -91,7 +110,6 @@ export class GameMap implements IGameMap {
                     //wall on the left
                     if(wall[0] < leftTopX && speedX) {
                         newSpeed = (wall[0] + this.TILESIZE) - leftTopX + speedX
-                        console.log('da')
                     }
                     //wall on the right
                     if(wall[0] > leftTopX && speedX) {
