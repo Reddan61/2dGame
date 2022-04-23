@@ -23,6 +23,10 @@ export class Enemy implements IEnemy {
     COLOR:string
     SPEED:number
     ANGLE = 0
+    lastPosition: {
+        x:any,
+        y:any
+    }
 
     constructor(x:number,y:number,radius:number,color:string,speed:number) {
         this.X = x
@@ -30,11 +34,23 @@ export class Enemy implements IEnemy {
         this.RADIUS = radius
         this.COLOR = color
         this.SPEED = speed
+        this.lastPosition = {
+            x:null,
+            y:null
+        }
     }
 
     setPosition(x: number, y: number)  {
         this.X = x
         this.Y = y
+    }
+    moveTo(x: number, y: number)  {
+        const angle = Math.atan2(y - this.Y,x - this.X)
+
+        const cos = Math.cos(angle)
+        const sin = Math.sin(angle)
+
+        this.setPosition(this.X + this.SPEED*cos, this.Y + this.SPEED*sin)
     }
 
     draw(ctx:CanvasRenderingContext2D, camera:ICamera) { 
@@ -83,24 +99,35 @@ export class Enemy implements IEnemy {
                 if(canMoveMap[y - 1][x]) {
                     arr.push([`${x},${y-1}`,cost])
                 }
+                if(canMoveMap[y - 1][x + 1] && canMoveMap[y - 1][x] && canMoveMap[y][x+1] ) {
+                    arr.push([`${x+1},${y-1}`,cost])
+                }
+                if(canMoveMap[y - 1][x - 1] && canMoveMap[y + 1][x] && canMoveMap[y][x-1] ) {
+                    arr.push([`${x-1},${y-1}`,cost])
+                }
+                if(canMoveMap[y + 1][x + 1] && canMoveMap[y + 1][x] && canMoveMap[y][x+1] ) {
+                    arr.push([`${x+1},${y+1}`,cost])
+                }
+                if(canMoveMap[y + 1][x - 1] && canMoveMap[y + 1][x] && canMoveMap[y][x-1] ) {
+                    arr.push([`${x-1},${y+1}`,cost])
+                }
                 graph[`${x},${y}`] = arr
             }
         }
-
+        
+        if(start === end)
+            return
+        
         const costs = {} as any
-        Object.keys(graph).forEach(el => {
-            for(let i = 0; i < el.length; i++) {
-                costs[el] = Infinity
-            }   
-        })
-
         const processed = [start]
         let neighbors = [...graph[start]]
         const path = {} as any
+
         for(let i = 0; i < neighbors.length; i++) {
             costs[neighbors[i][0]] = newCostsNeighbor(neighbors[i][0],neighbors[i][1],canMoveMap)
+            path[neighbors[i][0]] = start
         }
-       
+
         let node = findLowestNode(costs,processed)
 
         while (node) {
@@ -109,7 +136,7 @@ export class Enemy implements IEnemy {
             for(let i = 0; i < neighbors.length; i++) {
                 let newCost = costs[node] + newCostsNeighbor(neighbors[i][0],neighbors[i][1],canMoveMap)
             
-                if(newCost < costs[neighbors[i][0]]) {
+                if(newCost < (costs[neighbors[i][0]] || Infinity)) {
                     costs[neighbors[i][0]] = newCost
                     path[neighbors[i][0]] = node
                     if(neighbors[i][0] === String(start)) {
@@ -118,6 +145,7 @@ export class Enemy implements IEnemy {
                     }
                 }
             }
+            
 
             if(node === end) { 
                 break
@@ -126,6 +154,7 @@ export class Enemy implements IEnemy {
             processed.push(node)
             node = findLowestNode(costs,processed)
         }
+       
         
         const convertedPath = [] as any
         let currentEl = end
@@ -140,7 +169,7 @@ export class Enemy implements IEnemy {
 
             if(currentEl === start) {
                 isFound = true
-                convertedPath.unshift(currentEl)
+                // convertedPath.unshift(currentEl)
             }
         }
 
@@ -156,6 +185,15 @@ export class Enemy implements IEnemy {
             ctx.fillStyle = this.COLOR
             ctx.fill()
         }
+        
+        if(!convertedPath[0])
+            return
+
+        const splited = convertedPath[0].split(',')
+        const X = canMoveMap[splited[1]][splited[0]]![0] + gameMap.TILESIZE/2 
+        const Y = canMoveMap[splited[1]][splited[0]]![1] + gameMap.TILESIZE/2
+        
+        this.moveTo(X,Y)
 
         function newCostsNeighbor(neighbor:string,costTile:number,canMoveMap:([number,number]|null)[][]):number {
             const splitedNeighbor = neighbor.split(",")
