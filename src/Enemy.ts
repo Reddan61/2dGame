@@ -9,6 +9,11 @@ export interface IEnemy {
     COLOR:string
     SPEED:number
     ANGLE:number
+    lastPosition: {
+        x:number,
+        y:number,
+        moved:boolean
+    }
 
     setPosition: (x:number,y:number) => void
     draw:(ctx:CanvasRenderingContext2D,camera:ICamera) => void,
@@ -24,8 +29,9 @@ export class Enemy implements IEnemy {
     SPEED:number
     ANGLE = 0
     lastPosition: {
-        x:any,
-        y:any
+        x:number,
+        y:number,
+        moved:boolean
     }
 
     constructor(x:number,y:number,radius:number,color:string,speed:number) {
@@ -35,8 +41,9 @@ export class Enemy implements IEnemy {
         this.COLOR = color
         this.SPEED = speed
         this.lastPosition = {
-            x:null,
-            y:null
+            x:0,
+            y:0,
+            moved:true
         }
     }
 
@@ -63,8 +70,8 @@ export class Enemy implements IEnemy {
     }
 
     findPath(canMoveMap: ([number,number]|null)[][],player:IPlayer, gameMap:IGameMap,ctx:CanvasRenderingContext2D,camera:ICamera) {
-        const graph = {} as any
-
+        const graph = gameMap.graph
+        
         let start = ""
         let end = ""
 
@@ -85,36 +92,9 @@ export class Enemy implements IEnemy {
                 ) {
                     start = `${x},${y}`
                 }
-                const arr = [] as [string,number][]
-                const cost = 1
-                if(canMoveMap[y][x + 1]) {
-                    arr.push([`${x+1},${y}`,cost])
-                }
-                if(canMoveMap[y][x - 1]) {
-                    arr.push([`${x-1},${y}`,cost])
-                }
-                if(canMoveMap[y + 1][x]) {
-                    arr.push([`${x},${y+1}`,cost])
-                }
-                if(canMoveMap[y - 1][x]) {
-                    arr.push([`${x},${y-1}`,cost])
-                }
-                if(canMoveMap[y - 1][x + 1] && canMoveMap[y - 1][x] && canMoveMap[y][x+1] ) {
-                    arr.push([`${x+1},${y-1}`,cost])
-                }
-                if(canMoveMap[y - 1][x - 1] && canMoveMap[y + 1][x] && canMoveMap[y][x-1] ) {
-                    arr.push([`${x-1},${y-1}`,cost])
-                }
-                if(canMoveMap[y + 1][x + 1] && canMoveMap[y + 1][x] && canMoveMap[y][x+1] ) {
-                    arr.push([`${x+1},${y+1}`,cost])
-                }
-                if(canMoveMap[y + 1][x - 1] && canMoveMap[y + 1][x] && canMoveMap[y][x-1] ) {
-                    arr.push([`${x-1},${y+1}`,cost])
-                }
-                graph[`${x},${y}`] = arr
             }
         }
-        
+
         if(start === end)
             return
         
@@ -155,7 +135,6 @@ export class Enemy implements IEnemy {
             node = findLowestNode(costs,processed)
         }
        
-        
         const convertedPath = [] as any
         let currentEl = end
         let isFound = false
@@ -174,26 +153,30 @@ export class Enemy implements IEnemy {
         }
 
         //test------------
-        for(let i = 0; i<convertedPath.length;i++) {
-            const splited = convertedPath[i].split(',')
-            const X = canMoveMap[splited[1]][splited[0]]![0] + gameMap.TILESIZE/2
-            const Y = canMoveMap[splited[1]][splited[0]]![1] + gameMap.TILESIZE/2
-            ctx.beginPath() 
-            ctx.arc(X - (camera.X - camera.CAMERAWIDTH/2),
-                Y -(camera.Y - camera.CAMERAHEIGHT/2), 
-                5,0,Math.PI * 2,false)
-            ctx.fillStyle = this.COLOR
-            ctx.fill()
-        }
-        
+        this.drawPath(convertedPath,canMoveMap,gameMap.TILESIZE,camera,ctx)
+
         if(!convertedPath[0])
             return
 
         const splited = convertedPath[0].split(',')
         const X = canMoveMap[splited[1]][splited[0]]![0] + gameMap.TILESIZE/2 
         const Y = canMoveMap[splited[1]][splited[0]]![1] + gameMap.TILESIZE/2
+
+        if(Math.abs(this.lastPosition.x - this.X) <= this.SPEED && Math.abs(this.lastPosition.y - this.Y) <= this.SPEED && !this.lastPosition.moved) {
+            this.lastPosition.moved = true
+        }
         
-        this.moveTo(X,Y)
+        if(!this.lastPosition.moved) {
+            this.moveTo(this.lastPosition.x,this.lastPosition.y)
+        } else {
+            this.lastPosition = {
+                x:X,
+                y:Y,
+                moved:false
+            }
+            
+            this.moveTo(X,Y)
+        }
 
         function newCostsNeighbor(neighbor:string,costTile:number,canMoveMap:([number,number]|null)[][]):number {
             const splitedNeighbor = neighbor.split(",")
@@ -218,6 +201,28 @@ export class Enemy implements IEnemy {
                 }
             })
             return lowestNode
+        }
+    }
+
+    drawPath(convertedPath:string[],canMoveMap:([number,number]|null)[][],tileSize:number,camera:ICamera,ctx:CanvasRenderingContext2D) {
+        const lastPosition = {
+            x:this.X - (camera.X - camera.CAMERAWIDTH/2),
+            y:this.Y - (camera.Y - camera.CAMERAHEIGHT/2)
+        }
+        
+        for(let i = 0; i<convertedPath.length;i++) {
+            const splited = convertedPath[i].split(',')
+            const X = canMoveMap[Number(splited[1])][Number(splited[0])]![0] + tileSize/2
+            const Y = canMoveMap[Number(splited[1])][Number(splited[0])]![1] + tileSize/2
+
+            ctx.beginPath()
+            ctx.lineWidth = 2
+            ctx.strokeStyle = 'green'
+            ctx.moveTo(lastPosition.x, lastPosition.y)
+            ctx.lineTo(X - (camera.X - camera.CAMERAWIDTH/2), Y -(camera.Y - camera.CAMERAHEIGHT/2))
+            ctx.stroke()
+            lastPosition.x = X - (camera.X - camera.CAMERAWIDTH/2)
+            lastPosition.y = Y -(camera.Y - camera.CAMERAHEIGHT/2)
         }
     }
 }

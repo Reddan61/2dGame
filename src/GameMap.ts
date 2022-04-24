@@ -10,6 +10,9 @@ export interface IGameMap {
     text_map: number[][]
     world_map: [number,number][][]
     empty_tile: ([number,number]|null)[][]
+    graph: {
+        [XandY:string]:[string,number][]
+    }
 
     convertTextMapToWorldMap: (player:IPlayer, enemyController: IEnemyController) => void
     renderMap: (ctx:CanvasRenderingContext2D,camera:ICamera) => void
@@ -43,6 +46,11 @@ export class GameMap implements IGameMap {
 
     world_map = [] as [number,number][][]
     empty_tile = [] as ([number,number]|null)[][]
+
+    graph = {} as {
+        [XandY:string]:[string,number][]
+    }
+
     constructor(TILESIZE:number) {
         this.TILESIZE = TILESIZE
     }
@@ -72,14 +80,47 @@ export class GameMap implements IGameMap {
             startCords[1] += this.TILESIZE 
             startCords[0] = 0 
         }
+        for(let y = 0; y < this.empty_tile.length; y++) {
+            for(let x = 0; x < this.empty_tile[y].length; x++) {
+                if(!this.empty_tile[y][x])
+                    continue
+                const arr = [] as [string,number][]
+                const cost = 1
+                if(this.empty_tile[y][x + 1]) {
+                    arr.push([`${x+1},${y}`,cost])
+                }
+                if(this.empty_tile[y][x - 1]) {
+                    arr.push([`${x-1},${y}`,cost])
+                }
+                if(this.empty_tile[y + 1][x]) {
+                    arr.push([`${x},${y+1}`,cost])
+                }
+                if(this.empty_tile[y - 1][x]) {
+                    arr.push([`${x},${y-1}`,cost])
+                }
+                if(this.empty_tile[y - 1][x + 1] && this.empty_tile[y - 1][x] && this.empty_tile[y][x+1] ) {
+                    arr.push([`${x+1},${y-1}`,cost])
+                }
+                if(this.empty_tile[y - 1][x - 1] && this.empty_tile[y - 1][x] && this.empty_tile[y][x-1] ) {
+                    arr.push([`${x-1},${y-1}`,cost])
+                }
+                if(this.empty_tile[y + 1][x + 1] && this.empty_tile[y + 1][x] && this.empty_tile[y][x+1] ) {
+                    arr.push([`${x+1},${y+1}`,cost])
+                }
+                if(this.empty_tile[y + 1][x - 1] && this.empty_tile[y + 1][x] && this.empty_tile[y][x-1] ) {
+                    arr.push([`${x-1},${y+1}`,cost])
+                }
+                this.graph[`${x},${y}`] = arr
+            }
+        }
         console.log(this.world_map)
         console.log(this.empty_tile)
+        console.log(this.graph)
     }
 
     renderMap(ctx:CanvasRenderingContext2D,camera:ICamera) {
         for(let y = 0; y < this.world_map.length; y++) {
             for(let x = 0; x < this.world_map[y].length; x++) {
-                // if(this.world_map[y][x])
                 ctx.beginPath()
                 ctx.fillStyle = "#999999"
                 ctx.fillRect(this.world_map[y][x][0] - (camera.X - camera.CAMERAWIDTH/2),
