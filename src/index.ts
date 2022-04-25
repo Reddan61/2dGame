@@ -18,10 +18,10 @@ let lastSecfps = 0
 let lastSecond = 0
 
 const map = new GameMap(100)
-const player = new Player(0,0,30,"blue",5)
 const camera = new Camera(0,0,canvas.width,canvas.height)
-const enemyController = new EnemyController()
-map.convertTextMapToWorldMap(player,enemyController)
+const player = new Player(0,0,30,"blue",5, camera)
+
+map.convertTextMapToWorldMap(player)
 camera.setPosition(player.X, player.Y)
 
 
@@ -43,9 +43,9 @@ const GameLoop = () => {
     player.movement(map)
     camera.setPosition(player.X, player.Y)
     map.renderMap(ctx,camera)
-    enemyController.findPath(map.empty_tile,player,map,ctx,camera)
-    enemyController.draw(ctx,camera)
-    player.draw(ctx,camera)
+    EnemyController.findPath(map.empty_tile,player,map,ctx,camera)
+    EnemyController.draw(ctx,camera)
+    player.draw(ctx)
 
     showFPS(ctx,lastSecfps)
     
@@ -60,7 +60,13 @@ document.addEventListener("keyup", (e) => {
     player.setunPressedKey(e.code)
 })
 
+canvas.addEventListener("mousemove", (e) => {
+    const canvasRect = canvas.getBoundingClientRect()
+    const canvasLeft = canvasRect.left
+    const canvasTop = canvasRect.top
 
+    player.setAngle(e.clientX - canvasLeft,e.clientY - canvasTop)
+})
 
 
 GameLoop()

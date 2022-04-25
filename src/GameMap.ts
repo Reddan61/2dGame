@@ -1,7 +1,7 @@
-import { IEnemyController } from './EnemyController';
 import { ICamera } from './Camera';
 import {IPlayer} from "@/Player"
 import { Enemy } from './Enemy';
+import { EnemyController } from './EnemyController';
 
 export interface IGameMap {
     TILESIZE:number
@@ -14,7 +14,7 @@ export interface IGameMap {
         [XandY:string]:[string,number][]
     }
 
-    convertTextMapToWorldMap: (player:IPlayer, enemyController: IEnemyController) => void
+    convertTextMapToWorldMap: (player:IPlayer) => void
     renderMap: (ctx:CanvasRenderingContext2D,camera:ICamera) => void
     returnNewSpeed: (x:number,y:number,newX:number,newY:number, movingObjectColisionSize:number) => number
 }
@@ -29,7 +29,7 @@ export class GameMap implements IGameMap {
     text_map = [
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
         [1,3,1,0,1,0,0,1,0,1,1,0,0,0,0,0,0,0,1],
-        [1,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,1],
+        [1,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,3,0,1],
         [1,0,1,0,0,0,0,1,0,1,1,0,0,0,1,1,0,0,1],
         [1,0,1,0,1,1,0,1,0,1,1,0,0,0,1,1,0,0,1],
         [1,0,0,0,0,0,0,1,0,1,1,0,0,0,1,1,0,0,1],
@@ -40,7 +40,7 @@ export class GameMap implements IGameMap {
         [1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0,1,1],
         [1,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,1],
         [1,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,1],
-        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,1],
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
     ]
 
@@ -55,7 +55,7 @@ export class GameMap implements IGameMap {
         this.TILESIZE = TILESIZE
     }
 
-    convertTextMapToWorldMap(player:IPlayer, enemyController: IEnemyController) {
+    convertTextMapToWorldMap(player:IPlayer) {
         const startCords = [0,0]
 
         for(let y = 0; y < this.text_map.length; y++) {
@@ -73,7 +73,7 @@ export class GameMap implements IGameMap {
                     player.setPosition(startCords[0] + this.TILESIZE / 2,startCords[1] + this.TILESIZE / 2)
                 }
                 if(this.text_map[y][x] === 3) {
-                    enemyController.EnemyArray.push(new Enemy(startCords[0] + this.TILESIZE / 2,startCords[1] + this.TILESIZE / 2,30,"red",3))
+                    EnemyController.EnemyArray.push(new Enemy(startCords[0] + this.TILESIZE / 2,startCords[1] + this.TILESIZE / 2,30,"red",3))
                 }
                 startCords[0] += this.TILESIZE
             }
@@ -89,25 +89,25 @@ export class GameMap implements IGameMap {
                 if(this.empty_tile[y][x + 1]) {
                     arr.push([`${x+1},${y}`,cost])
                 }
-                if(this.empty_tile[y][x - 1]) {
+                if(x - 1 > 0 && this.empty_tile[y][x - 1]) {
                     arr.push([`${x-1},${y}`,cost])
                 }
                 if(this.empty_tile[y + 1][x]) {
                     arr.push([`${x},${y+1}`,cost])
                 }
-                if(this.empty_tile[y - 1][x]) {
+                if(y - 1 > 0 && this.empty_tile[y - 1][x]) {
                     arr.push([`${x},${y-1}`,cost])
                 }
-                if(this.empty_tile[y - 1][x + 1] && this.empty_tile[y - 1][x] && this.empty_tile[y][x+1] ) {
+                if(y - 1 > 0 && this.empty_tile[y - 1][x + 1] && this.empty_tile[y - 1][x] && this.empty_tile[y][x+1] ) {
                     arr.push([`${x+1},${y-1}`,cost])
                 }
-                if(this.empty_tile[y - 1][x - 1] && this.empty_tile[y - 1][x] && this.empty_tile[y][x-1] ) {
+                if(y - 1 > 0 && x - 1 > 0 && this.empty_tile[y - 1][x - 1] && this.empty_tile[y - 1][x] && this.empty_tile[y][x-1] ) {
                     arr.push([`${x-1},${y-1}`,cost])
                 }
                 if(this.empty_tile[y + 1][x + 1] && this.empty_tile[y + 1][x] && this.empty_tile[y][x+1] ) {
                     arr.push([`${x+1},${y+1}`,cost])
                 }
-                if(this.empty_tile[y + 1][x - 1] && this.empty_tile[y + 1][x] && this.empty_tile[y][x-1] ) {
+                if(x - 1 > 0 && this.empty_tile[y + 1][x - 1] && this.empty_tile[y + 1][x] && this.empty_tile[y][x-1] ) {
                     arr.push([`${x-1},${y+1}`,cost])
                 }
                 this.graph[`${x},${y}`] = arr
@@ -141,6 +141,7 @@ export class GameMap implements IGameMap {
 
         let newSpeed = speedX || speedY
 
+        
         for(let j = 0; j < this.world_map.length; j++) {
             for(let i = 0; i < this.world_map[j].length; i++) {
                 if(

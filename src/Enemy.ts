@@ -71,29 +71,18 @@ export class Enemy implements IEnemy {
 
     findPath(canMoveMap: ([number,number]|null)[][],player:IPlayer, gameMap:IGameMap,ctx:CanvasRenderingContext2D,camera:ICamera) {
         const graph = gameMap.graph
+
+        const startXIndex = Math.floor(this.X / gameMap.TILESIZE)
+        const startYIndex = Math.floor(this.Y / gameMap.TILESIZE)
         
-        let start = ""
-        let end = ""
+        const endXIndex = Math.floor(player.X / gameMap.TILESIZE)
+        const endYIndex = Math.floor(player.Y / gameMap.TILESIZE)
 
-        for(let y = 0; y < canMoveMap.length; y++) {
-            for(let x = 0; x < canMoveMap[y].length; x++) {
-                if(!canMoveMap[y][x])
-                    continue
-
-                if(
-                    player.X - player.RADIUS < canMoveMap[y][x]![0] + gameMap.TILESIZE  && player.X - player.RADIUS + (player.RADIUS*2)  > canMoveMap[y][x]![0] &&
-                    player.Y - player.RADIUS < canMoveMap[y][x]![1] + gameMap.TILESIZE && player.Y - player.RADIUS + (player.RADIUS*2) > canMoveMap[y][x]![1]
-                ) {
-                    end = `${x},${y}`
-                }
-                if(
-                    this.X - this.RADIUS < canMoveMap[y][x]![0] + gameMap.TILESIZE  && this.X - this.RADIUS + (this.RADIUS*2)  > canMoveMap[y][x]![0] &&
-                    this.Y - this.RADIUS < canMoveMap[y][x]![1] + gameMap.TILESIZE && this.Y - this.RADIUS + (this.RADIUS*2) > canMoveMap[y][x]![1]
-                ) {
-                    start = `${x},${y}`
-                }
-            }
-        }
+        if(startXIndex < 0 || startYIndex < 0 || endXIndex < 0 || endYIndex < 0)
+            return
+        
+        const start = `${startXIndex},${startYIndex}`
+        const end = `${endXIndex},${endYIndex}`       
 
         if(start === end)
             return

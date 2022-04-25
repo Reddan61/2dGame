@@ -7,12 +7,14 @@ export interface IPlayer {
     COLOR:string,
     SPEED:number,
     ANGLE:number,
+    CAMERA: ICamera
     movementKeys: {[code: string]: boolean},
 
     setPosition: (x:number,y:number) => void
 
-    draw:(ctx:CanvasRenderingContext2D,camera:ICamera) => void,
+    draw:(ctx:CanvasRenderingContext2D,camera:ICamera) => void
 
+    setAngle:(mouseX:number,mouseY:number) => void 
     setPressedKey:(keyCode:string) => void
     setunPressedKey:(keyCode:string) => void
     movement:(map: IGameMap) => void
@@ -25,16 +27,18 @@ export class Player implements IPlayer{
     RADIUS:number
     COLOR:string
     SPEED:number
+    CAMERA:ICamera
     ANGLE = 0
 
     movementKeys = {} as {[code: string]: boolean}
 
-    constructor(x:number,y:number,radius:number,color:string,speed:number) {
+    constructor(x:number,y:number,radius:number,color:string,speed:number, camera:ICamera) {
         this.X = x
         this.Y = y
         this.RADIUS = radius
         this.COLOR = color
         this.SPEED = speed
+        this.CAMERA = camera
     }
 
     setPosition(x: number, y: number)  {
@@ -42,13 +46,25 @@ export class Player implements IPlayer{
         this.Y = y
     }
 
-    draw(ctx:CanvasRenderingContext2D, camera:ICamera) { 
+    draw(ctx:CanvasRenderingContext2D) { 
+        const x = this.X - (this.CAMERA.X - this.CAMERA.CAMERAWIDTH/2)
+        const y = this.Y -(this.CAMERA.Y - this.CAMERA.CAMERAHEIGHT/2)
+        const gunLong = 60
         ctx.beginPath() 
-        ctx.arc(this.X - (camera.X - camera.CAMERAWIDTH/2),
-            this.Y -(camera.Y - camera.CAMERAHEIGHT/2), 
+        ctx.arc(x,
+            y, 
             this.RADIUS,0,Math.PI * 2,false)
+      
         ctx.fillStyle = this.COLOR
         ctx.fill()
+        //weapon
+        ctx.beginPath()
+        ctx.strokeStyle = "pink"
+        ctx.lineWidth = 6
+        ctx.moveTo(x,y)
+        ctx.lineTo(x + gunLong * Math.cos(this.ANGLE),y + gunLong * Math.sin(this.ANGLE))
+        ctx.closePath()
+        ctx.stroke()
     }
 
     setPressedKey(keyCode:string) {
@@ -57,6 +73,13 @@ export class Player implements IPlayer{
 
     setunPressedKey(keyCode:string) {
         this.movementKeys[keyCode] = false
+    }
+
+    setAngle(mouseX:number,mouseY:number) {
+        const x = mouseX- (this.X - (this.CAMERA.X - this.CAMERA.CAMERAWIDTH/2))
+        const y = mouseY - (this.Y -(this.CAMERA.Y - this.CAMERA.CAMERAHEIGHT/2))
+
+        this.ANGLE = Math.atan2(y,x)
     }
 
     movement(map: IGameMap) {
@@ -75,6 +98,12 @@ export class Player implements IPlayer{
         if(this.movementKeys.KeyA) {
             const speed = map.returnNewSpeed(this.X,this.Y, this.X - this.SPEED,this.Y,this.RADIUS) 
                 this.setPosition(this.X += speed,this.Y)
+        }
+        if(this.movementKeys.KeyQ) {
+            this.ANGLE -= 0.02
+        }
+        if(this.movementKeys.KeyE) {
+            this.ANGLE += 0.02
         }
     }
 }
