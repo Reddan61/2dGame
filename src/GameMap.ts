@@ -8,7 +8,7 @@ export interface IGameMap {
     mapW:number
     mapH:number
     text_map: number[][]
-    world_map: [number,number][][]
+    wall_map: ([number,number] | null)[][]
     empty_tile: ([number,number]|null)[][]
     graph: {
         [XandY:string]:[string,number][]
@@ -17,6 +17,7 @@ export interface IGameMap {
     convertTextMapToWorldMap: (player:IPlayer) => void
     renderMap: (ctx:CanvasRenderingContext2D,camera:ICamera) => void
     returnNewSpeed: (x:number,y:number,newX:number,newY:number, movingObjectColisionSize:number) => number
+    isCollisionWall: (newX:number,newY:number) => boolean
 }
 
 export class GameMap implements IGameMap {
@@ -28,23 +29,23 @@ export class GameMap implements IGameMap {
     //3-enemy
     text_map = [
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,0,1,0,1,0,0,1,0,1,1,0,0,0,0,0,0,0,1],
-        [1,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,1],
-        [1,0,1,0,0,0,0,1,0,1,1,0,0,0,1,1,0,0,1],
+        [1,0,1,0,1,0,0,1,0,1,1,0,0,0,0,1,0,0,1],
+        [1,0,1,0,3,0,0,0,0,0,0,0,1,1,1,1,0,0,1],
+        [1,0,1,0,0,0,0,1,0,1,1,0,0,0,1,1,0,3,1],
         [1,0,1,0,1,1,0,1,0,1,1,0,0,0,1,1,0,0,1],
-        [1,0,0,0,0,0,0,1,0,1,1,0,0,0,1,1,0,0,1],
+        [1,3,0,0,0,0,0,1,0,1,1,0,0,0,1,1,0,0,1],
         [1,1,1,1,0,1,1,1,0,1,1,0,0,0,0,1,1,0,1],
         [1,0,0,0,0,0,0,0,0,1,1,1,1,1,0,1,1,0,1],
-        [1,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,1],
+        [1,0,3,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,1],
         [1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1],
-        [1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0,1,1],
+        [1,0,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1],
         [1,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,1],
         [1,0,1,0,0,3,0,0,0,0,0,0,1,1,1,1,0,0,1],
-        [1,0,0,0,3,0,0,0,0,0,0,3,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,1],
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
     ]
 
-    world_map = [] as [number,number][][]
+    wall_map = [] as ([number,number] | null)[][]
     empty_tile = [] as ([number,number]|null)[][]
 
     graph = {} as {
@@ -59,14 +60,15 @@ export class GameMap implements IGameMap {
         const startCords = [0,0]
 
         for(let y = 0; y < this.text_map.length; y++) {
-            this.world_map[y] = []
+            this.wall_map[y] = []
             this.empty_tile[y] = []
             for(let x = 0; x < this.text_map[y].length; x++) {
                 if(this.text_map[y][x] !== 1) {
                     this.empty_tile[y].push([startCords[0],startCords[1]])
+                    this.wall_map[y].push(null)
                 }
                 if(this.text_map[y][x] === 1) {
-                    this.world_map[y].push([startCords[0],startCords[1]])
+                    this.wall_map[y].push([startCords[0],startCords[1]])
                     this.empty_tile[y].push(null)
                 }
                 if(this.text_map[y][x] === 2) {
@@ -113,18 +115,22 @@ export class GameMap implements IGameMap {
                 this.graph[`${x},${y}`] = arr
             }
         }
-        console.log(this.world_map)
-        console.log(this.empty_tile)
-        console.log(this.graph)
+        // console.log(this.wall_map)
+        // console.log(this.empty_tile)
+        // console.log(this.graph)
     }
 
     renderMap(ctx:CanvasRenderingContext2D,camera:ICamera) {
-        for(let y = 0; y < this.world_map.length; y++) {
-            for(let x = 0; x < this.world_map[y].length; x++) {
+        for(let y = 0; y < this.wall_map.length; y++) {
+            if(!this.wall_map[y])
+                continue
+            for(let x = 0; x < this.wall_map[y].length; x++) {
+                if(!this.wall_map[y][x])
+                    continue
                 ctx.beginPath()
                 ctx.fillStyle = "#999999"
-                ctx.fillRect(this.world_map[y][x][0] - (camera.X - camera.CAMERAWIDTH/2),
-                    this.world_map[y][x][1] -  (camera.Y - camera.CAMERAHEIGHT/2),
+                ctx.fillRect(this.wall_map[y][x]![0] - (camera.X - camera.CAMERAWIDTH/2),
+                    this.wall_map[y][x]![1] -  (camera.Y - camera.CAMERAHEIGHT/2),
                     this.TILESIZE,this.TILESIZE)
                 ctx.fill()
                 ctx.closePath()
@@ -132,6 +138,7 @@ export class GameMap implements IGameMap {
         }
     }
 
+    
     returnNewSpeed(x:number,y:number,newX:number,newY:number, movingObjectColisionSize:number)  {
         const leftTopX = newX - movingObjectColisionSize
         const leftTopY = newY - movingObjectColisionSize
@@ -142,13 +149,17 @@ export class GameMap implements IGameMap {
         let newSpeed = speedX || speedY
 
         
-        for(let j = 0; j < this.world_map.length; j++) {
-            for(let i = 0; i < this.world_map[j].length; i++) {
+        for(let j = 0; j < this.wall_map.length; j++) {
+            if(!this.wall_map[j])
+                continue
+            for(let i = 0; i < this.wall_map[j].length; i++) {
+                if(!this.wall_map[j][i])
+                    continue
+                const wall = this.wall_map[j][i]!
                 if(
-                    leftTopX < this.world_map[j][i][0] + this.TILESIZE  && leftTopX + (movingObjectColisionSize*2)  > this.world_map[j][i][0] &&
-		            leftTopY < this.world_map[j][i][1] + this.TILESIZE && leftTopY + (movingObjectColisionSize*2) > this.world_map[j][i][1]
+                    leftTopX < wall[0] + this.TILESIZE  && leftTopX + (movingObjectColisionSize*2)  > wall[0] &&
+		            leftTopY < wall[1] + this.TILESIZE && leftTopY + (movingObjectColisionSize*2) > wall[1]
                 ) {
-                    const wall = this.world_map[j][i]
                     //wall on the left
                     if(wall[0] < leftTopX && speedX) {
                         newSpeed = (wall[0] + this.TILESIZE) - leftTopX + speedX
@@ -173,4 +184,15 @@ export class GameMap implements IGameMap {
         return newSpeed
     }
 
+    isCollisionWall(newX:number,newY:number)  {
+        if(this.wall_map[Math.floor(newY / this.TILESIZE)]
+            &&
+            this.wall_map[Math.floor(newY / this.TILESIZE)][Math.floor(newX / this.TILESIZE)]
+        )
+        {
+            return true
+        }
+        
+        return false
+    }
 }

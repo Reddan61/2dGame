@@ -6,6 +6,7 @@ export interface ICamera {
     CAMERAHEIGHT:number
 
     setPosition:(x:number,y:number) => void
+    getCords: (x:number,y:number) => [number,number]
 }
 
 
@@ -26,5 +27,12 @@ export class Camera implements ICamera{
     setPosition(x:number,y:number) {
         this.X = x
         this.Y = y
+    }
+
+    getCords(x:number,y:number):[number,number] {
+        const newX = x - (this.X - this.CAMERAWIDTH/2)
+        const newY = y -(this.Y - this.CAMERAHEIGHT/2)
+
+        return [newX,newY]
     }
 }

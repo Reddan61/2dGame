@@ -57,9 +57,9 @@ export class Enemy implements IEnemy {
 
         const cos = Math.cos(this.ANGLE)
         const sin = Math.sin(this.ANGLE)
-        const bool = EnemyController.canIMoveWithPlayer(this.X,this.Y,this.X + this.SPEED*cos,this.Y + this.SPEED*sin,this.RADIUS,player)
+        const bool = EnemyController.collisionEnemyWithPlayer(this.X,this.Y,this.X + this.SPEED*cos,this.Y + this.SPEED*sin,this.RADIUS,player)
      
-        if(!bool) {
+        if(bool) {
             return
         }
        
@@ -103,56 +103,68 @@ export class Enemy implements IEnemy {
         
         const distToPlayer = Math.sqrt((player.X - this.X)**2 + (player.Y - this.Y)**2)
 
-        if(start === end || distToPlayer <= player.RADIUS + this.RADIUS + this.SPEED)
+        if(start === end || distToPlayer <= player.RADIUS + this.RADIUS + this.SPEED) {
+            this.moveTo(player.X,player.Y,player)
             return
-        
-        let [isFound,convertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,occupiedСells)
-            
-        
-        if(!isFound) {
-            const nearestOccupiedСell = {
-                x:Infinity,
-                y:Infinity
-            }
-            for(let i = 0; i < occupiedСells.length; i++) {
-                const splited = occupiedСells[i].split(",")
-                const x = Number(splited[0])
-                const y = Number(splited[1])
-                
-                const distToPlayerFromTile = Math.sqrt((player.X - x*gameMap.TILESIZE)**2 + (player.Y- y*gameMap.TILESIZE)**2 )
-                const distToPlayerFromNearestTile = Math.sqrt((player.X - nearestOccupiedСell.x)**2 + (player.Y- nearestOccupiedСell.y)**2 )
-                
-
-                if(distToPlayerFromTile <= distToPlayerFromNearestTile) {
-                    nearestOccupiedСell.x = canMoveMap[y][x]![0]
-                    nearestOccupiedСell.y = canMoveMap[y][x]![1]
-                }
-            }
-            const newEnd = `${nearestOccupiedСell.x / gameMap.TILESIZE},${nearestOccupiedСell.y / gameMap.TILESIZE}`
-            const [,convertedPathTonearestOccupiedСell] = this.AStar(graph,canMoveMap,gameMap,start,newEnd,occupiedСells)
-            convertedPath = convertedPathTonearestOccupiedСell
         }
         
+        let [isFound,convertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,occupiedСells)
+
+        //if we did not find the path to the player, we try to find a new path to the nearest enemy
+        if(!isFound) {
+            const enemyPositions = [...occupiedСells]
+            while (!isFound && enemyPositions.length > 0) {
+                const nearestOccupiedСell = {
+                    x:Infinity,
+                    y:Infinity
+                }
+                let currentCell = null as null | number
+                for(let i = 0; i < enemyPositions.length; i++) {
+                    const splited = enemyPositions[i].split(",")
+                    const x = Number(splited[0])
+                    const y = Number(splited[1])
+                    
+                    const distToPlayerFromTile = Math.sqrt((player.X - x*gameMap.TILESIZE)**2 + (player.Y- y*gameMap.TILESIZE)**2 )
+                    const distToPlayerFromNearestTile = Math.sqrt((player.X - nearestOccupiedСell.x)**2 + (player.Y- nearestOccupiedСell.y)**2 )
+                    
+    
+                    if(distToPlayerFromTile <= distToPlayerFromNearestTile) {
+                        nearestOccupiedСell.x = canMoveMap[y][x]![0]
+                        nearestOccupiedСell.y = canMoveMap[y][x]![1]
+                        currentCell = i
+                    }
+                }
+                const newEnd = `${nearestOccupiedСell.x / gameMap.TILESIZE},${nearestOccupiedСell.y / gameMap.TILESIZE}`
+                const [isFoundWayToNearestEnemy,convertedPathTonearestOccupiedСell] = this.AStar(graph,canMoveMap,gameMap,start,newEnd,occupiedСells)
+                if(!isFoundWayToNearestEnemy && currentCell) {
+                    enemyPositions.splice(currentCell,1)
+                } else {
+                    isFound = true
+                    convertedPath = convertedPathTonearestOccupiedСell.slice(0,convertedPathTonearestOccupiedСell.length - 1)
+                }
+            }
+        }
+      
         //test------------
         this.drawPath(convertedPath,canMoveMap,gameMap.TILESIZE,camera,ctx)
-
-        if(!convertedPath[0])
-            return
-
-        const splitedPath = convertedPath[0].split(',')
-        const PathX = canMoveMap[splitedPath[1]][splitedPath[0]]![0] + gameMap.TILESIZE/2 
-        const PathY = canMoveMap[splitedPath[1]][splitedPath[0]]![1] + gameMap.TILESIZE/2
         
         const splitedStart = start.split(',')
         const startX = canMoveMap[Number(splitedStart[1])][Number(splitedStart[0])]![0] + gameMap.TILESIZE/2 
         const startY = canMoveMap[Number(splitedStart[1])][Number(splitedStart[0])]![1] + gameMap.TILESIZE/2
+        
+        if(!convertedPath[0]) {
+            return
+        }
+
+        const splitedPath = convertedPath[0].split(',')
+        const PathX = canMoveMap[splitedPath[1]][splitedPath[0]]![0] + gameMap.TILESIZE/2 
+        const PathY = canMoveMap[splitedPath[1]][splitedPath[0]]![1] + gameMap.TILESIZE/2
         
         
         const distMeAndNextTile = Math.sqrt((this.X - PathX)**2 + (this.Y - PathY)**2)
         const distMeAndStartTile = Math.sqrt((this.X - startX)**2 + (this.Y - startY)**2)
         const distStartPathAndStartTile = Math.sqrt((PathX - startX)**2 + (PathY - startY)**2)
 
-        
         if(distMeAndNextTile <= distStartPathAndStartTile) {
             this.moveTo(PathX,PathY,player)
         } else {
@@ -161,8 +173,6 @@ export class Enemy implements IEnemy {
         if(distMeAndStartTile <= this.SPEED ) {
             this.moveTo(PathX,PathY,player)
         }
-        
-        
     }
 
     AStar(

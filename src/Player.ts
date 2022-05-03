@@ -1,3 +1,5 @@
+import { camera, ctx } from './worldObjects';
+import { IWeapon } from './Weapon/Weapon';
 import { EnemyController } from './EnemyController';
 import { IGameMap } from './GameMap';
 import { ICamera } from './Camera';
@@ -8,8 +10,8 @@ export interface IPlayer {
     COLOR:string,
     SPEED:number,
     ANGLE:number,
-    CAMERA: ICamera
     movementKeys: {[code: string]: boolean},
+    currentWeapon: IWeapon
 
     setPosition: (x:number,y:number) => void
 
@@ -28,18 +30,18 @@ export class Player implements IPlayer{
     RADIUS:number
     COLOR:string
     SPEED:number
-    CAMERA:ICamera
     ANGLE = 0
+    currentWeapon: IWeapon
 
     movementKeys = {} as {[code: string]: boolean}
 
-    constructor(x:number,y:number,radius:number,color:string,speed:number, camera:ICamera) {
+    constructor(x:number,y:number,radius:number,color:string,speed:number, weapon:IWeapon) {
         this.X = x
         this.Y = y
         this.RADIUS = radius
         this.COLOR = color
         this.SPEED = speed
-        this.CAMERA = camera
+        this.currentWeapon = weapon
     }
 
     setPosition(x: number, y: number)  {
@@ -47,10 +49,15 @@ export class Player implements IPlayer{
         this.Y = y
     }
 
-    draw(ctx:CanvasRenderingContext2D) { 
-        const x = this.X - (this.CAMERA.X - this.CAMERA.CAMERAWIDTH/2)
-        const y = this.Y -(this.CAMERA.Y - this.CAMERA.CAMERAHEIGHT/2)
-        const gunLong = 80
+    shoot() {
+        this.currentWeapon.shoot(this.X,this.Y,this.ANGLE)
+    }
+
+    draw() { 
+        if(!ctx)
+            return
+        const [x,y] = camera.getCords(this.X,this.Y)
+
         ctx.beginPath() 
         ctx.arc(x,
             y, 
@@ -58,17 +65,8 @@ export class Player implements IPlayer{
       
         ctx.fillStyle = this.COLOR
         ctx.fill()
-        //stick
-        ctx.beginPath()
-        ctx.strokeStyle = "pink"
-        ctx.lineWidth = 8
-        ctx.moveTo(x + 30*Math.cos(this.ANGLE),y + 30 * Math.sin(this.ANGLE))
-        ctx.lineTo(
-            x + gunLong * Math.cos(this.ANGLE),
-            y + gunLong * Math.sin(this.ANGLE)
-        )
-        ctx.closePath()
-        ctx.stroke()
+        //weapon
+        this.currentWeapon.draw(x,y,this.RADIUS,this.ANGLE)
     }
 
     setPressedKey(keyCode:string) {
@@ -80,8 +78,10 @@ export class Player implements IPlayer{
     }
 
     setAngle(mouseX:number,mouseY:number) {
-        const x = mouseX- (this.X - (this.CAMERA.X - this.CAMERA.CAMERAWIDTH/2))
-        const y = mouseY - (this.Y -(this.CAMERA.Y - this.CAMERA.CAMERAHEIGHT/2))
+        const [cameraX,cameraY] = camera.getCords(this.X,this.Y)
+
+        const x = mouseX- cameraX
+        const y = mouseY - cameraY
 
         this.ANGLE = Math.atan2(y,x)
     }
@@ -89,28 +89,22 @@ export class Player implements IPlayer{
     movement(map: IGameMap) {
         if(this.movementKeys.KeyW) {
             const speed = map.returnNewSpeed(this.X,this.Y, this.X,this.Y - this.SPEED,this.RADIUS) 
-            // const [bool,newSpeedX,newSpeedY] = EnemyController.returnSpeedToEnemy(this.X,this.Y, this.X,this.Y - this.SPEED,this.RADIUS)
-            // if(!bool) {
-            //     this.setPosition(newSpeedX,newSpeedY)
-            //     return
-            // } 
-            // this.setPosition(this.X,this.Y + speed)
-            if(EnemyController.canIMove(this.X,this.Y, this.X,this.Y - this.SPEED,this.RADIUS))    
+            if(!EnemyController.collisionEnemy(this.X,this.Y, this.X,this.Y - this.SPEED,this.RADIUS))    
                 this.setPosition(this.X,this.Y + speed)
         }
         if(this.movementKeys.KeyS) {
             const speed = map.returnNewSpeed(this.X,this.Y, this.X,this.Y + this.SPEED,this.RADIUS) 
-            if(EnemyController.canIMove(this.X,this.Y, this.X,this.Y + this.SPEED,this.RADIUS))    
+            if(!EnemyController.collisionEnemy(this.X,this.Y, this.X,this.Y + this.SPEED,this.RADIUS))    
                 this.setPosition(this.X,this.Y + speed)
         }
         if(this.movementKeys.KeyD) {
             const speed = map.returnNewSpeed(this.X,this.Y, this.X + this.SPEED,this.Y,this.RADIUS) 
-            if(EnemyController.canIMove(this.X,this.Y, this.X + this.SPEED,this.Y,this.RADIUS))    
+            if(!EnemyController.collisionEnemy(this.X,this.Y, this.X + this.SPEED,this.Y,this.RADIUS))    
                 this.setPosition(this.X + speed,this.Y)
         }
         if(this.movementKeys.KeyA) {
             const speed = map.returnNewSpeed(this.X,this.Y, this.X - this.SPEED,this.Y,this.RADIUS) 
-            if(EnemyController.canIMove(this.X,this.Y, this.X - this.SPEED,this.Y,this.RADIUS))    
+            if(!EnemyController.collisionEnemy(this.X,this.Y, this.X - this.SPEED,this.Y,this.RADIUS))    
                 this.setPosition(this.X + speed,this.Y)
         }
     }

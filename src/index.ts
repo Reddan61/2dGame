@@ -1,25 +1,20 @@
 import { EnemyController } from './EnemyController';
-import { Camera } from './Camera';
-import { GameMap } from "./GameMap"
-import {Player} from "./Player"
 import "../styles/styles.scss"
 import showFPS from "./utils/showFPS"
+import { camera, canvas, ctx, map, player } from './worldObjects';
+import { BulletsController } from './Bullets/BulletsController';
 
-const canvas = document.getElementById("canvas") as HTMLCanvasElement
-canvas.width = window.innerWidth
-canvas.height = window.innerHeight
+
 // canvas.width = 400
 // canvas.height = 400
 
-const ctx = canvas.getContext("2d")
 
 let currentfps = 0
 let lastSecfps = 0
 let lastSecond = 0
 
-const map = new GameMap(100)
-const camera = new Camera(0,0,canvas.width,canvas.height)
-const player = new Player(0,0,30,"blue",5, camera)
+
+
 
 map.convertTextMapToWorldMap(player)
 camera.setPosition(player.X, player.Y)
@@ -45,7 +40,9 @@ const GameLoop = () => {
     map.renderMap(ctx,camera)
     EnemyController.findPath(map.empty_tile,player,map,ctx,camera)
     EnemyController.draw(ctx,camera)
-    player.draw(ctx)
+    BulletsController.moveBullets()
+    BulletsController.drawBullets()
+    player.draw()
 
     showFPS(ctx,lastSecfps)
     
@@ -66,6 +63,10 @@ canvas.addEventListener("mousemove", (e) => {
     const canvasTop = canvasRect.top
 
     player.setAngle(e.clientX - canvasLeft,e.clientY - canvasTop)
+})
+
+canvas.addEventListener("click", (e) => {
+    player.shoot()
 })
 
 

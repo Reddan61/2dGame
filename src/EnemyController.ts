@@ -10,31 +10,31 @@ export class EnemyController {
 
 
     static draw(ctx: CanvasRenderingContext2D, camera:ICamera) {
-        for(let i = 0; i < this.EnemyArray.length; i++) {
-            this.EnemyArray[i].draw(ctx,camera)
+        for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
+            EnemyController.EnemyArray[i].draw(ctx,camera)
         }
     }
     static findPath(canMoveMap:([number,number]|null)[][],player:IPlayer,gameMap:IGameMap,ctx:CanvasRenderingContext2D,camera:ICamera) {
-        for(let i = 0; i < this.EnemyArray.length; i++) {
-            this.EnemyArray[i].findPath(canMoveMap,player,gameMap,ctx,camera)
+        for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
+            EnemyController.EnemyArray[i].findPath(canMoveMap,player,gameMap,ctx,camera)
         }
     }
-    static canIMove(x:number,y:number,newX:number,newY:number,radius:number):boolean {
-        let bool = true
+    static collisionEnemy(x:number,y:number,newX:number,newY:number,radius:number):boolean {
+        let bool = false
 
-        for(let i = 0; i < this.EnemyArray.length; i++) {
-            if(this.EnemyArray[i].X === x && this.EnemyArray[i].Y === y)
+        for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
+            if(EnemyController.EnemyArray[i].X === x && EnemyController.EnemyArray[i].Y === y)
                 continue
             
-            const enemy = this.EnemyArray[i]
+            const enemy = EnemyController.EnemyArray[i]
 
             if(
                 newX - radius < enemy.X + enemy.RADIUS  && newX + radius  > enemy.X - enemy.RADIUS &&
                 newY - radius < enemy.Y + enemy.RADIUS && newY + radius > enemy.Y - enemy.RADIUS
                 
             ) {
-                bool = false
-                if(!bool) {
+                bool = true
+                if(bool) {
                     break
                 }
             }
@@ -42,22 +42,45 @@ export class EnemyController {
         
         return bool
     }
-    static canIMoveWithPlayer(x:number,y:number,newX:number,newY:number,radius:number,player:IPlayer):boolean {
-        let bool = true
 
-        for(let i = 0; i < this.EnemyArray.length; i++) {
-            if(this.EnemyArray[i].X === x && this.EnemyArray[i].Y === y)
-                continue
-            
-            const enemy = this.EnemyArray[i]
+    static bulletCollisionEnemy(newX:number,newY:number,radius:number):boolean {
+        let bool = false
+
+        for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
+            const enemy = EnemyController.EnemyArray[i]
 
             if(
                 newX - radius < enemy.X + enemy.RADIUS  && newX + radius  > enemy.X - enemy.RADIUS &&
                 newY - radius < enemy.Y + enemy.RADIUS && newY + radius > enemy.Y - enemy.RADIUS
                 
             ) {
-                bool = false
-                if(!bool) {
+                bool = true
+                EnemyController.EnemyArray.splice(i,1)
+                if(bool) {
+                    break
+                }
+            }
+        }
+        
+        return bool
+    }
+
+    static collisionEnemyWithPlayer(x:number,y:number,newX:number,newY:number,radius:number,player:IPlayer):boolean {
+        let bool = false
+
+        for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
+            if(EnemyController.EnemyArray[i].X === x && EnemyController.EnemyArray[i].Y === y)
+                continue
+            
+            const enemy = EnemyController.EnemyArray[i]
+
+            if(
+                newX - radius < enemy.X + enemy.RADIUS  && newX + radius  > enemy.X - enemy.RADIUS &&
+                newY - radius < enemy.Y + enemy.RADIUS && newY + radius > enemy.Y - enemy.RADIUS
+                
+            ) {
+                bool = true
+                if(bool) {
                     break
                 }
             }
@@ -67,19 +90,19 @@ export class EnemyController {
             newY - radius < player.Y + player.RADIUS && newY + radius > player.Y - player.RADIUS
             
         ) {
-            bool = false
+            bool = true
         }
         return bool
     }
 
     static getPositionOtherEnemys(enemy:IEnemy) {
         const positions = [] as string[]
-        for(let i = 0; i < this.EnemyArray.length; i++) {
-            if(enemy.X === this.EnemyArray[i].X && enemy.Y === this.EnemyArray[i].Y) {
+        for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
+            if(enemy.X === EnemyController.EnemyArray[i].X && enemy.Y === EnemyController.EnemyArray[i].Y) {
                 continue
             }
             
-            positions.push(`${Math.floor(this.EnemyArray[i].X / 100)},${Math.floor(this.EnemyArray[i].Y / 100)}`)
+            positions.push(`${Math.floor(EnemyController.EnemyArray[i].X / 100)},${Math.floor(EnemyController.EnemyArray[i].Y / 100)}`)
         }
 
         return positions
