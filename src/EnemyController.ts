@@ -1,24 +1,36 @@
-import { ICamera } from './Camera';
-import { IEnemy } from './Enemy';
-import { IGameMap } from './GameMap';
-import { IPlayer } from './Player';
+import { Bullet } from './Bullets/Bullet';
+import { Camera } from './Camera';
+import { Enemy } from './Enemy';
+import { GameMap } from './GameMap';
+import { Player } from './Player';
 
 
 
 export class EnemyController {
-    static EnemyArray: IEnemy[] = []
+    static EnemyArray: Enemy[] = []
 
 
-    static draw(ctx: CanvasRenderingContext2D, camera:ICamera) {
+    static draw(ctx: CanvasRenderingContext2D, camera:Camera) {
         for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
             EnemyController.EnemyArray[i].draw(ctx,camera)
         }
     }
-    static findPath(canMoveMap:([number,number]|null)[][],player:IPlayer,gameMap:IGameMap,ctx:CanvasRenderingContext2D,camera:ICamera) {
+    static findPath(canMoveMap:([number,number]|null)[][],player:Player,gameMap:GameMap,ctx:CanvasRenderingContext2D,camera:Camera) {
         for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
             EnemyController.EnemyArray[i].findPath(canMoveMap,player,gameMap,ctx,camera)
         }
     }
+
+    static enemyAttack(player:Player) {
+        EnemyController.EnemyArray.forEach(el => {
+            const distToPlayer = Math.sqrt((player.X - el.X)**2 + (player.Y - el.Y)**2)
+
+            if(distToPlayer <= player.RADIUS + el.RADIUS*2) {
+                el.attack(player)
+            }
+        })
+    }
+
     static collisionEnemy(x:number,y:number,newX:number,newY:number,radius:number):boolean {
         let bool = false
 
@@ -43,7 +55,7 @@ export class EnemyController {
         return bool
     }
 
-    static bulletCollisionEnemy(newX:number,newY:number,radius:number):boolean {
+    static bulletCollisionEnemy(newX:number,newY:number,radius:number,bullet:Bullet):boolean {
         let bool = false
 
         for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
@@ -55,7 +67,8 @@ export class EnemyController {
                 
             ) {
                 bool = true
-                EnemyController.EnemyArray.splice(i,1)
+                if(EnemyController.EnemyArray[i].isDead(bullet.DAMAGE)) 
+                    EnemyController.EnemyArray.splice(i,1)
                 if(bool) {
                     break
                 }
@@ -65,7 +78,7 @@ export class EnemyController {
         return bool
     }
 
-    static collisionEnemyWithPlayer(x:number,y:number,newX:number,newY:number,radius:number,player:IPlayer):boolean {
+    static collisionEnemyWithPlayer(x:number,y:number,newX:number,newY:number,radius:number,player:Player):boolean {
         let bool = false
 
         for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
@@ -95,7 +108,7 @@ export class EnemyController {
         return bool
     }
 
-    static getPositionOtherEnemys(enemy:IEnemy) {
+    static getPositionOtherEnemys(enemy:Enemy) {
         const positions = [] as string[]
         for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
             if(enemy.X === EnemyController.EnemyArray[i].X && enemy.Y === EnemyController.EnemyArray[i].Y) {

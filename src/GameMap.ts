@@ -1,26 +1,9 @@
-import { ICamera } from './Camera';
-import {IPlayer} from "@/Player"
+import { Camera } from './Camera';
+import { Player } from "@/Player"
 import { Enemy } from './Enemy';
 import { EnemyController } from './EnemyController';
 
-export interface IGameMap {
-    TILESIZE:number
-    mapW:number
-    mapH:number
-    text_map: number[][]
-    wall_map: ([number,number] | null)[][]
-    empty_tile: ([number,number]|null)[][]
-    graph: {
-        [XandY:string]:[string,number][]
-    }
-
-    convertTextMapToWorldMap: (player:IPlayer) => void
-    renderMap: (ctx:CanvasRenderingContext2D,camera:ICamera) => void
-    returnNewSpeed: (x:number,y:number,newX:number,newY:number, movingObjectColisionSize:number) => number
-    isCollisionWall: (newX:number,newY:number) => boolean
-}
-
-export class GameMap implements IGameMap {
+export class GameMap {
     TILESIZE:number
     mapW = 10
     mapH = 10
@@ -30,18 +13,18 @@ export class GameMap implements IGameMap {
     text_map = [
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
         [1,0,1,0,1,0,0,1,0,1,1,0,0,0,0,1,0,0,1],
-        [1,0,1,0,3,0,0,0,0,0,0,0,1,1,1,1,0,0,1],
-        [1,0,1,0,0,0,0,1,0,1,1,0,0,0,1,1,0,3,1],
-        [1,0,1,0,1,1,0,1,0,1,1,0,0,0,1,1,0,0,1],
-        [1,3,0,0,0,0,0,1,0,1,1,0,0,0,1,1,0,0,1],
-        [1,1,1,1,0,1,1,1,0,1,1,0,0,0,0,1,1,0,1],
-        [1,0,0,0,0,0,0,0,0,1,1,1,1,1,0,1,1,0,1],
-        [1,0,3,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,1],
+        [1,0,1,0,0,0,0,3,0,0,0,0,1,1,1,1,0,0,1],
+        [1,0,1,0,0,0,0,1,0,1,0,0,0,0,1,1,0,3,1],
+        [1,0,1,0,1,1,0,1,0,1,0,0,0,0,1,1,0,0,1],
+        [1,0,0,0,0,0,0,1,0,1,0,0,0,0,1,1,0,0,1],
+        [1,1,1,1,0,1,1,1,0,1,0,0,0,0,0,1,1,0,1],
+        [1,3,0,0,0,0,0,0,0,1,1,1,1,1,0,1,1,0,1],
+        [1,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,1],
         [1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1],
         [1,0,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1],
         [1,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,1],
-        [1,0,1,0,0,3,0,0,0,0,0,0,1,1,1,1,0,0,1],
-        [1,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,1],
+        [1,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,1],
+        [1,0,0,0,3,0,0,0,0,0,0,3,0,0,0,0,0,0,1],
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
     ]
 
@@ -56,7 +39,7 @@ export class GameMap implements IGameMap {
         this.TILESIZE = TILESIZE
     }
 
-    convertTextMapToWorldMap(player:IPlayer) {
+    convertTextMapToWorldMap(player:Player) {
         const startCords = [0,0]
 
         for(let y = 0; y < this.text_map.length; y++) {
@@ -75,7 +58,7 @@ export class GameMap implements IGameMap {
                     player.setPosition(startCords[0] + this.TILESIZE / 2,startCords[1] + this.TILESIZE / 2)
                 }
                 if(this.text_map[y][x] === 3) {
-                    EnemyController.EnemyArray.push(new Enemy(startCords[0] + this.TILESIZE / 2,startCords[1] + this.TILESIZE / 2,30,"red",3))
+                    EnemyController.EnemyArray.push(new Enemy(startCords[0] + this.TILESIZE / 2,startCords[1] + this.TILESIZE / 2,30,"red",3,10))
                 }
                 startCords[0] += this.TILESIZE
             }
@@ -120,7 +103,7 @@ export class GameMap implements IGameMap {
         // console.log(this.graph)
     }
 
-    renderMap(ctx:CanvasRenderingContext2D,camera:ICamera) {
+    renderMap(ctx:CanvasRenderingContext2D,camera:Camera) {
         for(let y = 0; y < this.wall_map.length; y++) {
             if(!this.wall_map[y])
                 continue

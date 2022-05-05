@@ -1,19 +1,30 @@
 import { EnemyController } from './EnemyController';
 import "../styles/styles.scss"
 import showFPS from "./utils/showFPS"
-import { camera, canvas, ctx, map, player } from './worldObjects';
 import { BulletsController } from './Bullets/BulletsController';
+import { GameMap } from './GameMap';
+import { Camera } from './Camera';
+import { Weapon } from './Weapon/Weapon';
+import { Player } from './Player';
 
 
 // canvas.width = 400
 // canvas.height = 400
 
-
 let currentfps = 0
 let lastSecfps = 0
 let lastSecond = 0
 
+const canvas = document.getElementById("canvas") as HTMLCanvasElement
+canvas.width = window.innerWidth
+canvas.height = window.innerHeight
 
+const ctx = canvas.getContext("2d")
+
+let map = new GameMap(100)
+let camera = new Camera(0,0,canvas.width,canvas.height)
+let weapon = new Weapon(10,25,5,20)
+let player = new Player(0,0,30,"blue",5,weapon)
 
 
 map.convertTextMapToWorldMap(player)
@@ -24,6 +35,11 @@ camera.setPosition(player.X, player.Y)
 const GameLoop = () => {
     if(!ctx) return
     ctx.clearRect(0,0,canvas.offsetWidth,canvas.offsetHeight)
+
+    if(player.health <= 0) {
+        restart()
+        return
+    }
     
     const sec = Math.floor(performance.now() / 1000)
     
@@ -40,9 +56,10 @@ const GameLoop = () => {
     map.renderMap(ctx,camera)
     EnemyController.findPath(map.empty_tile,player,map,ctx,camera)
     EnemyController.draw(ctx,camera)
-    BulletsController.moveBullets()
-    BulletsController.drawBullets()
-    player.draw()
+    EnemyController.enemyAttack(player)
+    BulletsController.moveBullets(map)
+    BulletsController.drawBullets(ctx,camera)
+    player.draw(ctx,camera)
 
     showFPS(ctx,lastSecfps)
     
@@ -62,12 +79,27 @@ canvas.addEventListener("mousemove", (e) => {
     const canvasLeft = canvasRect.left
     const canvasTop = canvasRect.top
 
-    player.setAngle(e.clientX - canvasLeft,e.clientY - canvasTop)
+    player.setAngle(e.clientX - canvasLeft,e.clientY - canvasTop,camera)
 })
 
 canvas.addEventListener("click", (e) => {
     player.shoot()
 })
+
+function restart() {
+    map = new GameMap(100)
+    camera = new Camera(0,0,canvas.width,canvas.height)
+    weapon = new Weapon(10,25,5,20)
+    player = new Player(0,0,30,"blue",5,weapon)
+    
+    EnemyController.EnemyArray.splice(0, EnemyController.EnemyArray.length)
+    BulletsController.bullets.splice(0, BulletsController.bullets.length)
+
+    map.convertTextMapToWorldMap(player)
+    camera.setPosition(player.X, player.Y)
+
+    GameLoop()
+}
 
 
 GameLoop()

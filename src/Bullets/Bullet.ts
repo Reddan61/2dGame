@@ -1,30 +1,21 @@
-import { camera, ctx, map } from "@/worldObjects"
+import { Camera } from "@/Camera"
+import { GameMap } from '@/GameMap';
 
-export interface IBullet {
+export class Bullet  {
     X:number
     Y:number
     SPEED:number
     ANGLE:number
     RADIUS:number
+    DAMAGE:number
 
-    move:() => void
-    draw: () => void
-    collisionWall: () => boolean
-}
-
-export class Bullet implements IBullet {
-    X:number
-    Y:number
-    SPEED:number
-    ANGLE:number
-    RADIUS:number
-
-    constructor(x:number,y:number,speed:number,angle:number,radius:number) {
+    constructor(x:number,y:number,speed:number,angle:number,radius:number,damage:number) {
         this.X = x
         this.Y = y
         this.ANGLE = angle
         this.SPEED = speed
         this.RADIUS = radius
+        this.DAMAGE = damage
     }
 
     move() {
@@ -32,10 +23,7 @@ export class Bullet implements IBullet {
         this.Y = this.Y + this.SPEED * Math.sin(this.ANGLE)
     }
 
-    draw() {
-        if(!ctx)
-            return
-        
+    draw(ctx:CanvasRenderingContext2D,camera:Camera) {
         const [x,y] = camera.getCords(this.X,this.Y)
 
         ctx.beginPath() 
@@ -48,8 +36,8 @@ export class Bullet implements IBullet {
     }
 
 
-    collisionWall() {
-        return map.isCollisionWall(
+    collisionWall(gameMap:GameMap) {
+        return gameMap.isCollisionWall(
             this.X + this.SPEED * Math.cos(this.ANGLE),
             this.Y + this.SPEED * Math.sin(this.ANGLE)
         )

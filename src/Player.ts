@@ -1,41 +1,22 @@
-import { camera, ctx } from './worldObjects';
-import { IWeapon } from './Weapon/Weapon';
+import { Weapon } from './Weapon/Weapon';
 import { EnemyController } from './EnemyController';
-import { IGameMap } from './GameMap';
-import { ICamera } from './Camera';
-export interface IPlayer {
-    X:number,
-    Y:number,
-    RADIUS:number,
-    COLOR:string,
-    SPEED:number,
-    ANGLE:number,
-    movementKeys: {[code: string]: boolean},
-    currentWeapon: IWeapon
+import { GameMap } from './GameMap';
+import { Camera } from './Camera';
 
-    setPosition: (x:number,y:number) => void
-
-    draw:(ctx:CanvasRenderingContext2D,camera:ICamera) => void
-
-    setAngle:(mouseX:number,mouseY:number) => void 
-    setPressedKey:(keyCode:string) => void
-    setunPressedKey:(keyCode:string) => void
-    movement:(map: IGameMap) => void
-}
-
-
-export class Player implements IPlayer{
+export class Player{
     X:number
     Y:number
     RADIUS:number
     COLOR:string
     SPEED:number
     ANGLE = 0
-    currentWeapon: IWeapon
+    currentWeapon: Weapon
+    MAXHEALTH = 100
+    private HEALTH = this.MAXHEALTH
 
     movementKeys = {} as {[code: string]: boolean}
 
-    constructor(x:number,y:number,radius:number,color:string,speed:number, weapon:IWeapon) {
+    constructor(x:number,y:number,radius:number,color:string,speed:number, weapon:Weapon) {
         this.X = x
         this.Y = y
         this.RADIUS = radius
@@ -49,13 +30,18 @@ export class Player implements IPlayer{
         this.Y = y
     }
 
+    get health() {
+        return this.HEALTH
+    }
     shoot() {
         this.currentWeapon.shoot(this.X,this.Y,this.ANGLE)
     }
 
-    draw() { 
-        if(!ctx)
-            return
+    getDamage(damage:number) {
+        this.HEALTH -= damage
+    }
+
+    draw(ctx:CanvasRenderingContext2D,camera:Camera) { 
         const [x,y] = camera.getCords(this.X,this.Y)
 
         ctx.beginPath() 
@@ -65,8 +51,27 @@ export class Player implements IPlayer{
       
         ctx.fillStyle = this.COLOR
         ctx.fill()
+        
+
+        //healthBar
+        const maxHealthBarWidth = this.RADIUS * 2
+        const percentHealth = (this.HEALTH * 100)/this.MAXHEALTH
+        const percentHealthBarWidth = (maxHealthBarWidth * percentHealth) / 100
+        ctx.beginPath()
+        ctx.lineWidth = 2
+        ctx.strokeStyle = "black"
+        ctx.moveTo(x - this.RADIUS - 2,y + this.RADIUS + 14)
+        ctx.lineTo(x + this.RADIUS,y + this.RADIUS + 14)
+        ctx.lineTo(x + this.RADIUS,y + this.RADIUS + 21)
+        ctx.lineTo(x - this.RADIUS - 1,y + this.RADIUS + 21)
+        ctx.lineTo(x - this.RADIUS - 1,y + this.RADIUS + 14)
+        ctx.stroke()
+        ctx.closePath()
+        ctx.fillStyle = "red"
+        ctx.fillRect(x - this.RADIUS,y + this.RADIUS + 15, percentHealthBarWidth, 5)
+
         //weapon
-        this.currentWeapon.draw(x,y,this.RADIUS,this.ANGLE)
+        this.currentWeapon.draw(ctx,x,y,this.RADIUS,this.ANGLE)
     }
 
     setPressedKey(keyCode:string) {
@@ -77,7 +82,7 @@ export class Player implements IPlayer{
         this.movementKeys[keyCode] = false
     }
 
-    setAngle(mouseX:number,mouseY:number) {
+    setAngle(mouseX:number,mouseY:number,camera:Camera) {
         const [cameraX,cameraY] = camera.getCords(this.X,this.Y)
 
         const x = mouseX- cameraX
@@ -86,7 +91,7 @@ export class Player implements IPlayer{
         this.ANGLE = Math.atan2(y,x)
     }
 
-    movement(map: IGameMap) {
+    movement(map: GameMap) {
         if(this.movementKeys.KeyW) {
             const speed = map.returnNewSpeed(this.X,this.Y, this.X,this.Y - this.SPEED,this.RADIUS) 
             if(!EnemyController.collisionEnemy(this.X,this.Y, this.X,this.Y - this.SPEED,this.RADIUS))    

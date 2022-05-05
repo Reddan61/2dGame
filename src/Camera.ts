@@ -1,16 +1,4 @@
-export interface ICamera {
-    X:number
-    Y:number
-
-    CAMERAWIDTH:number
-    CAMERAHEIGHT:number
-
-    setPosition:(x:number,y:number) => void
-    getCords: (x:number,y:number) => [number,number]
-}
-
-
-export class Camera implements ICamera{
+export class Camera {
     X:number
     Y:number
 

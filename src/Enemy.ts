@@ -1,58 +1,60 @@
-import { IGameMap } from './GameMap';
-import { IPlayer } from '@/Player';
-import { ICamera } from "./Camera"
+import { GameMap } from './GameMap';
+import { Player } from '@/Player';
+import { Camera } from "./Camera"
 import { EnemyController } from './EnemyController';
 
-export interface IEnemy {
-    X:number
-    Y:number
-    RADIUS:number
-    COLOR:string
-    SPEED:number
-    ANGLE:number
-    lastPosition: {
-        x:number,
-        y:number,
-        moved:boolean
-    }
 
-    setPosition: (x:number,y:number) => void
-    draw:(ctx:CanvasRenderingContext2D,camera:ICamera) => void,
-    findPath:(canMoveMap: ([number,number]|null)[][],player:IPlayer,gameMap:IGameMap,ctx:CanvasRenderingContext2D,camera:ICamera) => void
-}
-
-
-export class Enemy implements IEnemy {
+export class Enemy {
     X:number
     Y:number
     RADIUS:number
     COLOR:string
     SPEED:number
     ANGLE = 0
-    lastPosition: {
-        x:number,
-        y:number,
-        moved:boolean
-    }
+    HEALTH:number
+    MAXHEALTH: number
+    DAMAGE:number
+    private lastStartPosition = ""
+    private lastEndPosition = ""
+    private lastConvertedPath = [] as string[]
+    private lastIsFound = false
+    private lastAtack = 0
+    private attackSpeed = 1
 
-    constructor(x:number,y:number,radius:number,color:string,speed:number) {
+    constructor(
+        x:number,y:number,radius:number,color:string,speed:number,
+        damage:number,health = 100
+    ) {
         this.X = x
         this.Y = y
         this.RADIUS = radius
         this.COLOR = color
         this.SPEED = speed
-        this.lastPosition = {
-            x:0,
-            y:0,
-            moved:true
-        }
+        this.MAXHEALTH = health
+        this.HEALTH = this.MAXHEALTH
+        this.DAMAGE = damage
     }
 
     setPosition(x: number, y: number)  {
         this.X = x
         this.Y = y
     }
-    moveTo(x: number, y: number,player:IPlayer)  {
+
+    isDead(damage: number) {
+        this.HEALTH -= damage
+
+        return this.HEALTH <= 0
+    }
+
+    attack(player:Player) {
+        const now = Math.floor(performance.now() / 1000)
+        // if(this.attackSpeed +  this.lastAtack <= now) {
+        //     player.getDamage(this.DAMAGE)
+        //     this.lastAtack = now
+        // }
+    }
+
+    moveTo(x: number, y: number,player:Player)  {
         this.ANGLE =  Math.atan2(y - this.Y,x - this.X)
 
         const cos = Math.cos(this.ANGLE)
@@ -66,7 +68,7 @@ export class Enemy implements IEnemy {
         this.setPosition(this.X + this.SPEED*cos,this.Y + this.SPEED*sin)
     }
 
-    draw(ctx:CanvasRenderingContext2D, camera:ICamera) { 
+    draw(ctx:CanvasRenderingContext2D, camera:Camera) { 
         const x = this.X - (camera.X - camera.CAMERAWIDTH/2)
         const y = this.Y -(camera.Y - camera.CAMERAHEIGHT/2)
         
@@ -83,9 +85,28 @@ export class Enemy implements IEnemy {
             3,0,Math.PI * 2,false)
         ctx.fillStyle = "black"
         ctx.fill()
+        
+        //healthBar
+        const maxHealthBarWidth = this.RADIUS * 2
+        const percentHealth = (this.HEALTH * 100)/this.MAXHEALTH
+        const percentHealthBarWidth = (maxHealthBarWidth * percentHealth) / 100
+        ctx.beginPath()
+        ctx.lineWidth = 2
+        ctx.strokeStyle = "black"
+        ctx.moveTo(x - this.RADIUS - 2,y + this.RADIUS + 14)
+        ctx.lineTo(x + this.RADIUS,y + this.RADIUS + 14)
+        ctx.lineTo(x + this.RADIUS,y + this.RADIUS + 21)
+        ctx.lineTo(x - this.RADIUS - 1,y + this.RADIUS + 21)
+        ctx.lineTo(x - this.RADIUS - 1,y + this.RADIUS + 14)
+        ctx.stroke()
+        ctx.closePath()
+        ctx.fillStyle = "red"
+        ctx.fillRect(x - this.RADIUS,y + this.RADIUS + 15, percentHealthBarWidth, 5)
     }
 
-    findPath(canMoveMap: ([number,number]|null)[][],player:IPlayer, gameMap:IGameMap,ctx:CanvasRenderingContext2D,camera:ICamera) {
+    findPath(canMoveMap: ([number,number]|null)[][],player:Player, gameMap:GameMap,ctx:CanvasRenderingContext2D,camera:Camera) {
+        const startTest = performance.now()
+
         const graph = {...gameMap.graph}
         const occupiedСells = EnemyController.getPositionOtherEnemys(this)
 
@@ -103,52 +124,69 @@ export class Enemy implements IEnemy {
         
         const distToPlayer = Math.sqrt((player.X - this.X)**2 + (player.Y - this.Y)**2)
 
-        if(start === end || distToPlayer <= player.RADIUS + this.RADIUS + this.SPEED) {
-            this.moveTo(player.X,player.Y,player)
-            return
-        }
+        // if(distToPlayer <= player.RADIUS + this.RADIUS + this.SPEED) {
+        //     this.moveTo(player.X,player.Y,player)
+        //     return
+        // }
+        // if(distToPlayer <= gameMap.TILESIZE) {
+        //     this.moveTo(player.X,player.Y,player)
+        //     return
+        // }
         
-        let [isFound,convertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,occupiedСells)
+        let isFound = this.lastIsFound
+        let convertedPath = [] as string[]
+
+        [isFound,convertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,occupiedСells)
+        // if(this.lastEndPosition !== end && this.lastStartPosition !== start) {
+        //     [isFound,convertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,occupiedСells)
+        //     this.lastConvertedPath = [...convertedPath]
+        //     this.lastStartPosition = start
+        //     this.lastEndPosition = end
+        //     this.lastIsFound = isFound
+        // } else {
+        //     convertedPath = this.lastConvertedPath
+        // }
 
         //if we did not find the path to the player, we try to find a new path to the nearest enemy
-        if(!isFound) {
-            const enemyPositions = [...occupiedСells]
-            while (!isFound && enemyPositions.length > 0) {
-                const nearestOccupiedСell = {
-                    x:Infinity,
-                    y:Infinity
-                }
-                let currentCell = null as null | number
-                for(let i = 0; i < enemyPositions.length; i++) {
-                    const splited = enemyPositions[i].split(",")
-                    const x = Number(splited[0])
-                    const y = Number(splited[1])
+        // if(!isFound) {
+        //     const enemyPositions = [...occupiedСells]
+        //     while (!isFound && enemyPositions.length > 0) {
+        //         const nearestOccupiedСell = {
+        //             x:Infinity,
+        //             y:Infinity
+        //         }
+        //         let currentCell = null as null | number
+        //         for(let i = 0; i < enemyPositions.length; i++) {
+        //             const splited = enemyPositions[i].split(",")
+        //             const x = Number(splited[0])
+        //             const y = Number(splited[1])
                     
-                    const distToPlayerFromTile = Math.sqrt((player.X - x*gameMap.TILESIZE)**2 + (player.Y- y*gameMap.TILESIZE)**2 )
-                    const distToPlayerFromNearestTile = Math.sqrt((player.X - nearestOccupiedСell.x)**2 + (player.Y- nearestOccupiedСell.y)**2 )
+        //             const distToPlayerFromTile = Math.sqrt((player.X - x*gameMap.TILESIZE)**2 + (player.Y- y*gameMap.TILESIZE)**2 )
+        //             const distToPlayerFromNearestTile = Math.sqrt((player.X - nearestOccupiedСell.x)**2 + (player.Y- nearestOccupiedСell.y)**2 )
                     
     
-                    if(distToPlayerFromTile <= distToPlayerFromNearestTile) {
-                        nearestOccupiedСell.x = canMoveMap[y][x]![0]
-                        nearestOccupiedСell.y = canMoveMap[y][x]![1]
-                        currentCell = i
-                    }
-                }
-                const newEnd = `${nearestOccupiedСell.x / gameMap.TILESIZE},${nearestOccupiedСell.y / gameMap.TILESIZE}`
-                const [isFoundWayToNearestEnemy,convertedPathTonearestOccupiedСell] = this.AStar(graph,canMoveMap,gameMap,start,newEnd,occupiedСells)
-                if(!isFoundWayToNearestEnemy && currentCell) {
-                    enemyPositions.splice(currentCell,1)
-                } else {
-                    isFound = true
-                    convertedPath = convertedPathTonearestOccupiedСell.slice(0,convertedPathTonearestOccupiedСell.length - 1)
-                }
-            }
-        }
+        //             if(distToPlayerFromTile <= distToPlayerFromNearestTile) {
+        //                 nearestOccupiedСell.x = canMoveMap[y][x]![0]
+        //                 nearestOccupiedСell.y = canMoveMap[y][x]![1]
+        //                 currentCell = i
+        //             }
+        //         }
+        //         const newEnd = `${nearestOccupiedСell.x / gameMap.TILESIZE},${nearestOccupiedСell.y / gameMap.TILESIZE}`
+        //         const [isFoundWayToNearestEnemy,convertedPathTonearestOccupiedСell] = this.AStar(graph,canMoveMap,gameMap,start,newEnd,occupiedСells)
+        //         if(!isFoundWayToNearestEnemy && currentCell) {
+        //             enemyPositions.splice(currentCell,1)
+        //         } else {
+        //             isFound = true
+        //             convertedPath = convertedPathTonearestOccupiedСell.slice(0,convertedPathTonearestOccupiedСell.length - 1)
+        //         }
+        //     }
+        // }
       
         //test------------
         this.drawPath(convertedPath,canMoveMap,gameMap.TILESIZE,camera,ctx)
         
         const splitedStart = start.split(',')
+        
         const startX = canMoveMap[Number(splitedStart[1])][Number(splitedStart[0])]![0] + gameMap.TILESIZE/2 
         const startY = canMoveMap[Number(splitedStart[1])][Number(splitedStart[0])]![1] + gameMap.TILESIZE/2
         
@@ -157,8 +195,8 @@ export class Enemy implements IEnemy {
         }
 
         const splitedPath = convertedPath[0].split(',')
-        const PathX = canMoveMap[splitedPath[1]][splitedPath[0]]![0] + gameMap.TILESIZE/2 
-        const PathY = canMoveMap[splitedPath[1]][splitedPath[0]]![1] + gameMap.TILESIZE/2
+        const PathX = canMoveMap[Number(splitedPath[1])][Number(splitedPath[0])]![0] + gameMap.TILESIZE/2 
+        const PathY = canMoveMap[Number(splitedPath[1])][Number(splitedPath[0])]![1] + gameMap.TILESIZE/2
         
         
         const distMeAndNextTile = Math.sqrt((this.X - PathX)**2 + (this.Y - PathY)**2)
@@ -171,8 +209,11 @@ export class Enemy implements IEnemy {
             this.moveTo(startX,startY,player)
         }
         if(distMeAndStartTile <= this.SPEED ) {
+            // [this.lastIsFound,this.lastConvertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,occupiedСells)
+            
             this.moveTo(PathX,PathY,player)
         }
+        console.log(performance.now() - startTest )
     }
 
     AStar(
@@ -180,7 +221,7 @@ export class Enemy implements IEnemy {
             [XandY:string]:[string,number][]
         },
         canMoveMap: ([number,number]|null)[][],
-        gameMap:IGameMap,
+        gameMap:GameMap,
         start:string,end:string,occupiedСells:string[]) {
 
 
@@ -270,7 +311,7 @@ export class Enemy implements IEnemy {
         }
     }
 
-    drawPath(convertedPath:string[],canMoveMap:([number,number]|null)[][],tileSize:number,camera:ICamera,ctx:CanvasRenderingContext2D) {
+    drawPath(convertedPath:string[],canMoveMap:([number,number]|null)[][],tileSize:number,camera:Camera,ctx:CanvasRenderingContext2D) {
         const lastPosition = {
             x:this.X - (camera.X - camera.CAMERAWIDTH/2),
             y:this.Y - (camera.Y - camera.CAMERAHEIGHT/2)
