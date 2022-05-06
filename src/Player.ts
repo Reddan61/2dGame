@@ -94,22 +94,22 @@ export class Player{
     movement(map: GameMap) {
         if(this.movementKeys.KeyW) {
             const speed = map.returnNewSpeed(this.X,this.Y, this.X,this.Y - this.SPEED,this.RADIUS) 
-            if(!EnemyController.collisionEnemy(this.X,this.Y, this.X,this.Y - this.SPEED,this.RADIUS))    
+            if(!EnemyController.collisionEnemyForPlayer(this.X,this.Y, this.X,this.Y - this.SPEED,this.RADIUS))    
                 this.setPosition(this.X,this.Y + speed)
         }
         if(this.movementKeys.KeyS) {
             const speed = map.returnNewSpeed(this.X,this.Y, this.X,this.Y + this.SPEED,this.RADIUS) 
-            if(!EnemyController.collisionEnemy(this.X,this.Y, this.X,this.Y + this.SPEED,this.RADIUS))    
+            if(!EnemyController.collisionEnemyForPlayer(this.X,this.Y, this.X,this.Y + this.SPEED,this.RADIUS))    
                 this.setPosition(this.X,this.Y + speed)
         }
         if(this.movementKeys.KeyD) {
             const speed = map.returnNewSpeed(this.X,this.Y, this.X + this.SPEED,this.Y,this.RADIUS) 
-            if(!EnemyController.collisionEnemy(this.X,this.Y, this.X + this.SPEED,this.Y,this.RADIUS))    
+            if(!EnemyController.collisionEnemyForPlayer(this.X,this.Y, this.X + this.SPEED,this.Y,this.RADIUS))    
                 this.setPosition(this.X + speed,this.Y)
         }
         if(this.movementKeys.KeyA) {
             const speed = map.returnNewSpeed(this.X,this.Y, this.X - this.SPEED,this.Y,this.RADIUS) 
-            if(!EnemyController.collisionEnemy(this.X,this.Y, this.X - this.SPEED,this.Y,this.RADIUS))    
+            if(!EnemyController.collisionEnemyForPlayer(this.X,this.Y, this.X - this.SPEED,this.Y,this.RADIUS))    
                 this.setPosition(this.X + speed,this.Y)
         }
     }

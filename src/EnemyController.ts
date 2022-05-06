@@ -31,7 +31,7 @@ export class EnemyController {
         })
     }
 
-    static collisionEnemy(x:number,y:number,newX:number,newY:number,radius:number):boolean {
+    static collisionEnemyForPlayer(x:number,y:number,newX:number,newY:number,radius:number):boolean {
         let bool = false
 
         for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
@@ -41,8 +41,8 @@ export class EnemyController {
             const enemy = EnemyController.EnemyArray[i]
 
             if(
-                newX - radius < enemy.X + enemy.RADIUS  && newX + radius  > enemy.X - enemy.RADIUS &&
-                newY - radius < enemy.Y + enemy.RADIUS && newY + radius > enemy.Y - enemy.RADIUS
+                newX - radius < enemy.X + enemy.RADIUS / 2  && newX + radius  > enemy.X - enemy.RADIUS / 2 &&
+                newY - radius < enemy.Y + enemy.RADIUS / 2 && newY + radius > enemy.Y - enemy.RADIUS / 2
                 
             ) {
                 bool = true
@@ -78,35 +78,35 @@ export class EnemyController {
         return bool
     }
 
-    static collisionEnemyWithPlayer(x:number,y:number,newX:number,newY:number,radius:number,player:Player):boolean {
-        let bool = false
+    // static collisionEnemyWithPlayer(x:number,y:number,newX:number,newY:number,radius:number,player:Player):boolean {
+    //     let bool = false
 
-        for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
-            if(EnemyController.EnemyArray[i].X === x && EnemyController.EnemyArray[i].Y === y)
-                continue
+    //     for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
+    //         if(EnemyController.EnemyArray[i].X === x && EnemyController.EnemyArray[i].Y === y)
+    //             continue
             
-            const enemy = EnemyController.EnemyArray[i]
+    //         const enemy = EnemyController.EnemyArray[i]
 
-            if(
-                newX - radius < enemy.X + enemy.RADIUS  && newX + radius  > enemy.X - enemy.RADIUS &&
-                newY - radius < enemy.Y + enemy.RADIUS && newY + radius > enemy.Y - enemy.RADIUS
+    //         if(
+    //             newX - radius < enemy.X + enemy.RADIUS  && newX + radius  > enemy.X - enemy.RADIUS &&
+    //             newY - radius < enemy.Y + enemy.RADIUS && newY + radius > enemy.Y - enemy.RADIUS
                 
-            ) {
-                bool = true
-                if(bool) {
-                    break
-                }
-            }
-        }
-        if(
-            newX - radius < player.X + player.RADIUS  && newX + radius  > player.X - player.RADIUS &&
-            newY - radius < player.Y + player.RADIUS && newY + radius > player.Y - player.RADIUS
+    //         ) {
+    //             bool = true
+    //             if(bool) {
+    //                 break
+    //             }
+    //         }
+    //     }
+    //     if(
+    //         newX - radius < player.X + player.RADIUS  && newX + radius  > player.X - player.RADIUS &&
+    //         newY - radius < player.Y + player.RADIUS && newY + radius > player.Y - player.RADIUS
             
-        ) {
-            bool = true
-        }
-        return bool
-    }
+    //     ) {
+    //         bool = true
+    //     }
+    //     return bool
+    // }
 
     static getPositionOtherEnemys(enemy:Enemy) {
         const positions = [] as string[]

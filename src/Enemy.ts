@@ -14,10 +14,12 @@ export class Enemy {
     HEALTH:number
     MAXHEALTH: number
     DAMAGE:number
-    private lastStartPosition = ""
-    private lastEndPosition = ""
-    private lastConvertedPath = [] as string[]
-    private lastIsFound = false
+
+    private findpathParts = {
+        start:"",
+        end:"",
+        convertedPath: [] as string[]
+    }
     private lastAtack = 0
     private attackSpeed = 1
 
@@ -48,10 +50,10 @@ export class Enemy {
 
     attack(player:Player) {
         const now = Math.floor(performance.now() / 1000)
-        // if(this.attackSpeed +  this.lastAtack <= now) {
-        //     player.getDamage(this.DAMAGE)
-        //     this.lastAtack = now
-        // }
+        if(this.attackSpeed +  this.lastAtack <= now) {
+            player.getDamage(this.DAMAGE)
+            this.lastAtack = now
+        }
     }
 
     moveTo(x: number, y: number,player:Player)  {
@@ -59,12 +61,6 @@ export class Enemy {
 
         const cos = Math.cos(this.ANGLE)
         const sin = Math.sin(this.ANGLE)
-        const bool = EnemyController.collisionEnemyWithPlayer(this.X,this.Y,this.X + this.SPEED*cos,this.Y + this.SPEED*sin,this.RADIUS,player)
-     
-        if(bool) {
-            return
-        }
-       
         this.setPosition(this.X + this.SPEED*cos,this.Y + this.SPEED*sin)
     }
 
@@ -105,8 +101,6 @@ export class Enemy {
     }
 
     findPath(canMoveMap: ([number,number]|null)[][],player:Player, gameMap:GameMap,ctx:CanvasRenderingContext2D,camera:Camera) {
-        const startTest = performance.now()
-
         const graph = {...gameMap.graph}
         const occupiedСells = EnemyController.getPositionOtherEnemys(this)
 
@@ -120,81 +114,35 @@ export class Enemy {
             return
         
         const start = `${startXIndex},${startYIndex}`
-        const end = `${endXIndex},${endYIndex}`   
+        const end = `${endXIndex},${endYIndex}`  
         
         const distToPlayer = Math.sqrt((player.X - this.X)**2 + (player.Y - this.Y)**2)
 
-        // if(distToPlayer <= player.RADIUS + this.RADIUS + this.SPEED) {
-        //     this.moveTo(player.X,player.Y,player)
-        //     return
-        // }
-        // if(distToPlayer <= gameMap.TILESIZE) {
-        //     this.moveTo(player.X,player.Y,player)
-        //     return
-        // }
-        
-        let isFound = this.lastIsFound
-        let convertedPath = [] as string[]
+         if(start === end) {
+            if( distToPlayer > this.RADIUS + player.RADIUS + this.SPEED)
+                this.moveTo(player.X,player.Y,player)
+            return
+        }
 
-        [isFound,convertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,occupiedСells)
-        // if(this.lastEndPosition !== end && this.lastStartPosition !== start) {
-        //     [isFound,convertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,occupiedСells)
-        //     this.lastConvertedPath = [...convertedPath]
-        //     this.lastStartPosition = start
-        //     this.lastEndPosition = end
-        //     this.lastIsFound = isFound
-        // } else {
-        //     convertedPath = this.lastConvertedPath
-        // }
-
-        //if we did not find the path to the player, we try to find a new path to the nearest enemy
-        // if(!isFound) {
-        //     const enemyPositions = [...occupiedСells]
-        //     while (!isFound && enemyPositions.length > 0) {
-        //         const nearestOccupiedСell = {
-        //             x:Infinity,
-        //             y:Infinity
-        //         }
-        //         let currentCell = null as null | number
-        //         for(let i = 0; i < enemyPositions.length; i++) {
-        //             const splited = enemyPositions[i].split(",")
-        //             const x = Number(splited[0])
-        //             const y = Number(splited[1])
-                    
-        //             const distToPlayerFromTile = Math.sqrt((player.X - x*gameMap.TILESIZE)**2 + (player.Y- y*gameMap.TILESIZE)**2 )
-        //             const distToPlayerFromNearestTile = Math.sqrt((player.X - nearestOccupiedСell.x)**2 + (player.Y- nearestOccupiedСell.y)**2 )
-                    
-    
-        //             if(distToPlayerFromTile <= distToPlayerFromNearestTile) {
-        //                 nearestOccupiedСell.x = canMoveMap[y][x]![0]
-        //                 nearestOccupiedСell.y = canMoveMap[y][x]![1]
-        //                 currentCell = i
-        //             }
-        //         }
-        //         const newEnd = `${nearestOccupiedСell.x / gameMap.TILESIZE},${nearestOccupiedСell.y / gameMap.TILESIZE}`
-        //         const [isFoundWayToNearestEnemy,convertedPathTonearestOccupiedСell] = this.AStar(graph,canMoveMap,gameMap,start,newEnd,occupiedСells)
-        //         if(!isFoundWayToNearestEnemy && currentCell) {
-        //             enemyPositions.splice(currentCell,1)
-        //         } else {
-        //             isFound = true
-        //             convertedPath = convertedPathTonearestOccupiedСell.slice(0,convertedPathTonearestOccupiedСell.length - 1)
-        //         }
-        //     }
-        // }
+        if(start !== this.findpathParts.start || end !== this.findpathParts.end) {
+             [,this.findpathParts.convertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end) 
+            this.findpathParts.start = start
+            this.findpathParts.end = end
+        }
       
         //test------------
-        this.drawPath(convertedPath,canMoveMap,gameMap.TILESIZE,camera,ctx)
+        this.drawPath(this.findpathParts.convertedPath,canMoveMap,gameMap.TILESIZE,camera,ctx)
         
-        const splitedStart = start.split(',')
+        const splitedStart = this.findpathParts.start.split(',')
         
         const startX = canMoveMap[Number(splitedStart[1])][Number(splitedStart[0])]![0] + gameMap.TILESIZE/2 
         const startY = canMoveMap[Number(splitedStart[1])][Number(splitedStart[0])]![1] + gameMap.TILESIZE/2
         
-        if(!convertedPath[0]) {
+        if(!this.findpathParts.convertedPath[0]) {
             return
         }
 
-        const splitedPath = convertedPath[0].split(',')
+        const splitedPath = this.findpathParts.convertedPath[0].split(',')
         const PathX = canMoveMap[Number(splitedPath[1])][Number(splitedPath[0])]![0] + gameMap.TILESIZE/2 
         const PathY = canMoveMap[Number(splitedPath[1])][Number(splitedPath[0])]![1] + gameMap.TILESIZE/2
         
@@ -203,17 +151,18 @@ export class Enemy {
         const distMeAndStartTile = Math.sqrt((this.X - startX)**2 + (this.Y - startY)**2)
         const distStartPathAndStartTile = Math.sqrt((PathX - startX)**2 + (PathY - startY)**2)
 
-        if(distMeAndNextTile <= distStartPathAndStartTile) {
-            this.moveTo(PathX,PathY,player)
-        } else {
+        if(
+            distStartPathAndStartTile < distMeAndNextTile
+            && distMeAndStartTile > this.SPEED
+        ) {
             this.moveTo(startX,startY,player)
+            return
         }
-        if(distMeAndStartTile <= this.SPEED ) {
-            // [this.lastIsFound,this.lastConvertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,occupiedСells)
-            
-            this.moveTo(PathX,PathY,player)
+        if(!occupiedСells.includes(this.findpathParts.convertedPath[0])) {
+            if( distToPlayer > this.RADIUS + player.RADIUS + this.SPEED)
+                this.moveTo(PathX,PathY,player)
         }
-        console.log(performance.now() - startTest )
+
     }
 
     AStar(
@@ -222,7 +171,7 @@ export class Enemy {
         },
         canMoveMap: ([number,number]|null)[][],
         gameMap:GameMap,
-        start:string,end:string,occupiedСells:string[]) {
+        start:string,end:string) {
 
 
         const costs = {} as any
@@ -238,11 +187,6 @@ export class Enemy {
         let node = findLowestNode(costs,processed)
         
         while (node) {
-            if(occupiedСells.includes(node)){
-                processed.push(node)
-                node = findLowestNode(costs,processed)
-                continue
-            }
             neighbors = [...graph[node]]
             
             for(let i = 0; i < neighbors.length; i++) {
