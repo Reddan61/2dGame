@@ -23,7 +23,7 @@ const ctx = canvas.getContext("2d")
 
 let map = new GameMap(100)
 let camera = new Camera(0,0,canvas.width,canvas.height)
-let weapon = new Weapon(10,25,5,20)
+let weapon = new Weapon(10,25,5,20,0.2)
 let player = new Player(0,0,30,"blue",5,weapon)
 
 
@@ -52,6 +52,7 @@ const GameLoop = () => {
     }
     
     player.movement(map)
+    player.shoot()
     camera.setPosition(player.X, player.Y)
     map.renderMap(ctx,camera)
     EnemyController.findPath(map.empty_tile,player,map,ctx,camera)
@@ -73,6 +74,12 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("keyup", (e) => {
     player.setunPressedKey(e.code)
 })
+document.addEventListener("mousedown", (e) => {
+    player.setPressedKey(String(e.button))
+})
+document.addEventListener("mouseup", (e) => {
+    player.setunPressedKey(String(e.button))
+})
 
 canvas.addEventListener("mousemove", (e) => {
     const canvasRect = canvas.getBoundingClientRect()
@@ -82,14 +89,10 @@ canvas.addEventListener("mousemove", (e) => {
     player.setAngle(e.clientX - canvasLeft,e.clientY - canvasTop,camera)
 })
 
-canvas.addEventListener("click", (e) => {
-    player.shoot()
-})
-
 function restart() {
     map = new GameMap(100)
     camera = new Camera(0,0,canvas.width,canvas.height)
-    weapon = new Weapon(10,25,5,20)
+    weapon = new Weapon(10,25,5,20,0.2)
     player = new Player(0,0,30,"blue",5,weapon)
     
     EnemyController.EnemyArray.splice(0, EnemyController.EnemyArray.length)

@@ -49,7 +49,7 @@ export class Enemy {
     }
 
     attack(player:Player) {
-        const now = Math.floor(performance.now() / 1000)
+        const now = performance.now() / 1000
         if(this.attackSpeed +  this.lastAtack <= now) {
             player.getDamage(this.DAMAGE)
             this.lastAtack = now
@@ -115,17 +115,35 @@ export class Enemy {
         
         const start = `${startXIndex},${startYIndex}`
         const end = `${endXIndex},${endYIndex}`  
+
+        const occupiedСellsWithOutEnd = occupiedСells.filter( el => {
+            return el !== end
+        })
+
         
         const distToPlayer = Math.sqrt((player.X - this.X)**2 + (player.Y - this.Y)**2)
 
-         if(start === end) {
+        
+        if(start === end) {
             if( distToPlayer > this.RADIUS + player.RADIUS + this.SPEED)
-                this.moveTo(player.X,player.Y,player)
+            this.moveTo(player.X,player.Y,player)
             return
         }
-
+        
         if(start !== this.findpathParts.start || end !== this.findpathParts.end) {
-             [,this.findpathParts.convertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end) 
+            const [isFoundWithOccupied,newConvertedPathWithOccupied] = this.AStar(graph,canMoveMap,gameMap,start,end,occupiedСellsWithOutEnd) 
+            
+            if(!isFoundWithOccupied) {
+                const [isFound,newConvertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,[]) 
+                if(isFound) {
+                    this.findpathParts.convertedPath = newConvertedPath
+                } else {
+                    this.findpathParts.convertedPath = newConvertedPathWithOccupied
+                }
+            } else {
+                this.findpathParts.convertedPath = newConvertedPathWithOccupied
+            }
+
             this.findpathParts.start = start
             this.findpathParts.end = end
         }
@@ -171,7 +189,9 @@ export class Enemy {
         },
         canMoveMap: ([number,number]|null)[][],
         gameMap:GameMap,
-        start:string,end:string) {
+        start:string,end:string,
+        occupiedСells: string[]
+        ) {
 
 
         const costs = {} as any
@@ -185,8 +205,15 @@ export class Enemy {
         }
 
         let node = findLowestNode(costs,processed)
+        let isFound = false
         
         while (node) {
+            if(occupiedСells.includes(node)){
+                processed.push(node)
+                node = findLowestNode(costs,processed)
+                continue
+            }
+
             neighbors = [...graph[node]]
             
             for(let i = 0; i < neighbors.length; i++) {
@@ -204,6 +231,7 @@ export class Enemy {
             
 
             if(node === end) { 
+                isFound = true
                 break
             }
 
@@ -211,11 +239,13 @@ export class Enemy {
             node = findLowestNode(costs,processed)
         }
        
+        if(!isFound)
+            return [isFound,[]]
+        
         const convertedPath = [] as any
         let currentEl = end
-        let isFound = false
         let positionWhile = 0
-        while(positionWhile < Object.keys(path).length && !isFound) {
+        while(positionWhile < Object.keys(path).length) {
             if(path[currentEl]) {
                 convertedPath.unshift(currentEl)
             }
@@ -223,7 +253,7 @@ export class Enemy {
             positionWhile++
 
             if(currentEl === start) {
-                isFound = true
+                break
             }
         }
 

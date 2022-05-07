@@ -34,7 +34,9 @@ export class Player{
         return this.HEALTH
     }
     shoot() {
-        this.currentWeapon.shoot(this.X,this.Y,this.ANGLE)
+        if(this.movementKeys["0"]) {
+            this.currentWeapon.shoot(this.X,this.Y,this.ANGLE)
+        }
     }
 
     getDamage(damage:number) {
