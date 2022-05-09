@@ -29,6 +29,7 @@ let player = new Player(0,0,30,"blue",5,weapon)
 
 map.convertTextMapToWorldMap(player)
 camera.setPosition(player.X, player.Y)
+EnemyController.setNumberEnemy(10)
 
 
 
@@ -55,8 +56,9 @@ const GameLoop = () => {
     player.shoot()
     camera.setPosition(player.X, player.Y)
     map.renderMap(ctx,camera)
+    EnemyController.spawnEnemy(map)
     EnemyController.findPath(map.empty_tile,player,map,ctx,camera)
-    EnemyController.draw(ctx,camera)
+    EnemyController.draw(ctx,camera,map)
     EnemyController.enemyAttack(player)
     BulletsController.moveBullets(map)
     BulletsController.drawBullets(ctx,camera)
@@ -97,6 +99,7 @@ function restart() {
     
     EnemyController.EnemyArray.splice(0, EnemyController.EnemyArray.length)
     BulletsController.bullets.splice(0, BulletsController.bullets.length)
+    EnemyController.setNumberEnemy(10)
 
     map.convertTextMapToWorldMap(player)
     camera.setPosition(player.X, player.Y)

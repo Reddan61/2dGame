@@ -56,7 +56,7 @@ export class Enemy {
         }
     }
 
-    moveTo(x: number, y: number,player:Player)  {
+    moveTo(x: number, y: number)  {
         this.ANGLE =  Math.atan2(y - this.Y,x - this.X)
 
         const cos = Math.cos(this.ANGLE)
@@ -126,13 +126,15 @@ export class Enemy {
         
         if(start === end) {
             if( distToPlayer > this.RADIUS + player.RADIUS + this.SPEED)
-            this.moveTo(player.X,player.Y,player)
+            this.moveTo(player.X,player.Y)
             return
         }
         
         if(start !== this.findpathParts.start || end !== this.findpathParts.end) {
             const [isFoundWithOccupied,newConvertedPathWithOccupied] = this.AStar(graph,canMoveMap,gameMap,start,end,occupiedСellsWithOutEnd) 
             
+            // const [isFound,newConvertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,[]) 
+
             if(!isFoundWithOccupied) {
                 const [isFound,newConvertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,[]) 
                 if(isFound) {
@@ -173,12 +175,12 @@ export class Enemy {
             distStartPathAndStartTile < distMeAndNextTile
             && distMeAndStartTile > this.SPEED
         ) {
-            this.moveTo(startX,startY,player)
+            this.moveTo(startX,startY)
             return
         }
         if(!occupiedСells.includes(this.findpathParts.convertedPath[0])) {
             if( distToPlayer > this.RADIUS + player.RADIUS + this.SPEED)
-                this.moveTo(PathX,PathY,player)
+                this.moveTo(PathX,PathY)
         }
 
     }
