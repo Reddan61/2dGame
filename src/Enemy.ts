@@ -130,21 +130,22 @@ export class Enemy {
             return
         }
         
-        if(start !== this.findpathParts.start || end !== this.findpathParts.end) {
-            const [isFoundWithOccupied,newConvertedPathWithOccupied] = this.AStar(graph,canMoveMap,gameMap,start,end,occupiedСellsWithOutEnd) 
+        // if(start !== this.findpathParts.start || end !== this.findpathParts.end) {
+        if(end !== this.findpathParts.end) {
+            // const [isFoundWithOccupied,newConvertedPathWithOccupied] = this.AStar(graph,canMoveMap,gameMap,start,end,occupiedСellsWithOutEnd) 
             
-            // const [isFound,newConvertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,[]) 
+            const [isFound,newConvertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,[]) 
 
-            if(!isFoundWithOccupied) {
-                const [isFound,newConvertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,[]) 
-                if(isFound) {
+            // if(!isFoundWithOccupied) {
+            //     const [isFound,newConvertedPath] = this.AStar(graph,canMoveMap,gameMap,start,end,[]) 
+            //     if(isFound) {
                     this.findpathParts.convertedPath = newConvertedPath
-                } else {
-                    this.findpathParts.convertedPath = newConvertedPathWithOccupied
-                }
-            } else {
-                this.findpathParts.convertedPath = newConvertedPathWithOccupied
-            }
+            //     } else {
+            //         this.findpathParts.convertedPath = newConvertedPathWithOccupied
+            //     }
+            // } else {
+            //     this.findpathParts.convertedPath = newConvertedPathWithOccupied
+            // }
 
             this.findpathParts.start = start
             this.findpathParts.end = end
@@ -182,7 +183,8 @@ export class Enemy {
             if( distToPlayer > this.RADIUS + player.RADIUS + this.SPEED)
                 this.moveTo(PathX,PathY)
         }
-
+        if(distMeAndNextTile <= this.SPEED )
+            this.findpathParts.convertedPath.splice(0,1)
     }
 
     AStar(

@@ -29,7 +29,7 @@ let player = new Player(0,0,30,"blue",5,weapon)
 
 map.convertTextMapToWorldMap(player)
 camera.setPosition(player.X, player.Y)
-EnemyController.setNumberEnemy(10)
+EnemyController.setNumberEnemy(0)
 
 
 
