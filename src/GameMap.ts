@@ -3,6 +3,7 @@ import { Camera } from './Camera';
 import { Player } from "@/Player"
 import { Enemy } from './Enemy';
 import { EnemyController } from './EnemyController';
+import { AStar } from './utils/aStar';
 
 export class GameMap {
     TILESIZE:number
@@ -28,7 +29,7 @@ export class GameMap {
         [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
-        [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
+        [1,0,0,0,0,0,1,0, 0,0,0,0,0,0,0,1, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
 
         [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
@@ -70,6 +71,12 @@ export class GameMap {
     }
     portalsGraph = {} as {
         [XandY:string]:[string,number][]
+    }
+
+    chunkGraph = {} as {
+        [XandYChunk:string]: {
+            [XandY:string] : [string,number][]
+        }
     }
 
     constructor(TILESIZE:number) {
@@ -152,7 +159,26 @@ export class GameMap {
             [-1,1],[0,1],[1,1],
         ]
 
+        const chunkPortals = {} as {
+            [XandY:string]: string[]
+        }
+
         const addToGraphPortals = (x:number,y:number,x2:number,y2:number) => {
+            const xChunkNumber = Math.floor(x / this.chunkW)
+            const yChunkNumber = Math.floor(y / this.chunkH)
+
+            if(chunkPortals[`${xChunkNumber},${yChunkNumber}`] ) {
+                if(!chunkPortals[`${xChunkNumber},${yChunkNumber}`].includes(`${x},${y}`))
+                    chunkPortals[`${xChunkNumber},${yChunkNumber}`] = [
+                        ...chunkPortals[`${xChunkNumber},${yChunkNumber}`],
+                        `${x},${y}`
+                    ]
+            } else {
+                chunkPortals[`${xChunkNumber},${yChunkNumber}`] = [
+                    `${x},${y}`
+                ]
+            }
+
             if(this.portalsGraph[`${x},${y}`]) {
                 this.portalsGraph[`${x},${y}`] = [
                     ...this.portalsGraph[`${x},${y}`], 
@@ -345,6 +371,39 @@ export class GameMap {
             }
         }
 
+        const chunkPortalskeys = Object.keys(chunkPortals)
+
+        //поиск пути из портала в другие порталы этого чанка
+        for(let i = 0; i < chunkPortalskeys.length; i++) {
+            for(let j = 0; j < chunkPortals[chunkPortalskeys[i]].length; j++) {
+                const start = chunkPortals[chunkPortalskeys[i]][j]
+        
+                if(!this.isCurrentChunk(chunkPortalskeys[i],start))
+                    continue
+
+                for(let g = 0; g < chunkPortals[chunkPortalskeys[i]].length; g++) {
+                    const end = chunkPortals[chunkPortalskeys[i]][g]
+                    
+                    if(j === g && !this.isCurrentChunk(chunkPortalskeys[i],end))
+                        continue
+  
+                    const [isFound,] = AStar(
+                        this.getChunkGraph(chunkPortalskeys[i]),
+                        this.empty_tile,
+                        this, start, end, []
+                    )
+                    if(isFound) {
+                        this.portalsGraph[start] = [
+                            ...this.portalsGraph[start],
+                            [end,1]
+                        ]
+                    }
+                }
+            }
+        }
+
+        // this.getChunkGraph("4,4")
+
         EnemyController.setSpawnPoints(spawns)
         console.log('chunks graph')
         console.log(this.bigGraph)
@@ -356,6 +415,73 @@ export class GameMap {
         console.log(this.wall_map)
         console.log('empty map')
         console.log(this.empty_tile)
+    }
+
+    isCurrentChunk(currentChunk:string,position:string) {
+        const splitedChunk = currentChunk.split(',')
+        const splitedPosition = position.split(',')
+
+        const xSC = Number(splitedChunk[0])
+        const ySC = Number(splitedChunk[1])
+
+        const xSP = Number(splitedPosition[0])
+        const ySP = Number(splitedPosition[1])
+
+        const xChunkNumber = Math.floor(xSP / this.chunkW)
+        const yChunkNumber = Math.floor(ySP / this.chunkH)
+
+        if(xSC === xChunkNumber && ySC === yChunkNumber) 
+            return true
+        return false
+    }
+
+    getChunkGraph(chunk:string) {
+        const newGraphChunk = {} as  {
+                [XandY:string] : [string,number][]
+        }
+        const splitedChunk = chunk.split(',')
+        const xChunk = Number(splitedChunk[0])
+        const yChunk = Number(splitedChunk[1])
+
+        const xChunkStart = xChunk * this.chunkW
+        const yChunkStart = yChunk * this.chunkH
+
+        let currentX = xChunkStart
+        let currentY = yChunkStart
+
+        if(this.chunkGraph[chunk]) 
+            return this.chunkGraph[chunk]
+        
+        for(let y = 0; y < this.chunkH; y++) {
+            currentY = yChunkStart + y
+            currentX = xChunkStart
+            for(let x = 0; x < this.chunkW; x++) {
+                currentX = xChunkStart + x 
+                const currentPosition = `${currentX},${currentY}`
+                const newNeighbors = [] as [string,number][]
+                if(!this.graph[currentPosition] || this.text_map[currentY][currentX] === 1) {
+                    continue
+                }
+                for(let i = 0; i < this.graph[currentPosition].length; i++){
+                    const splitedNeighbor = this.graph[currentPosition][i][0].split(",")
+                    const xNeighbor = Number(splitedNeighbor[0])
+                    const yNeighbor = Number(splitedNeighbor[1])
+                    
+                    if(xNeighbor < xChunkStart + this.chunkW
+                        && xNeighbor >= xChunkStart 
+                        && yNeighbor >= yChunkStart 
+                        && yNeighbor < yChunkStart + this.chunkH 
+                    ) {
+                        newNeighbors.push(this.graph[currentPosition][i])
+                    }
+                }
+
+                newGraphChunk[currentPosition] = newNeighbors
+            }
+        }
+
+        this.chunkGraph[chunk] = newGraphChunk
+        return this.chunkGraph[chunk]
     }
 
     renderMap(ctx:CanvasRenderingContext2D,camera:Camera) {
