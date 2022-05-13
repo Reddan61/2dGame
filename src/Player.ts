@@ -2,6 +2,7 @@ import { Weapon } from './Weapon/Weapon';
 import { EnemyController } from './EnemyController';
 import { GameMap } from './GameMap';
 import { Camera } from './Camera';
+import { AStar } from './utils/aStar';
 
 export class Player{
     X:number
@@ -13,6 +14,10 @@ export class Player{
     currentWeapon: Weapon
     MAXHEALTH = 100
     private HEALTH = this.MAXHEALTH
+
+    private lastPosition = ""
+    private lastPositionChunk = ""
+    nearportals = [] as string[]
 
     movementKeys = {} as {[code: string]: boolean}
 
@@ -28,6 +33,18 @@ export class Player{
     setPosition(x: number, y: number)  {
         this.X = x
         this.Y = y
+    }
+
+    checkChunk(gameMap:GameMap) {
+        const x = Math.floor(this.X / gameMap.TILESIZE)
+        const y = Math.floor(this.Y / gameMap.TILESIZE)
+        const chunk = gameMap.getChunkNumber(x,y)
+
+        if(this.lastPositionChunk !== chunk) {
+            this.lastPositionChunk = chunk
+
+            this.nearportals = gameMap.setPathToPortalsFromTileOneChunk(x,y)
+        }
     }
 
     get health() {

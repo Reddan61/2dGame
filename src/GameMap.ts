@@ -17,7 +17,7 @@ export class GameMap {
         [1,2,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
-        [1,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,3,1,],
+        [1,0,0,0,0,0,0,1, 1,0,0,3,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,1,1,1,0,1,1,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
@@ -55,7 +55,7 @@ export class GameMap {
         [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 1,0,0,0,0,0,0,1,],
-        [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 1,0,0,0,0,0,3,1,],
+        [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 1,0,0,0,0,0,0,1,],
         [1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,]
     ]
 
@@ -69,11 +69,16 @@ export class GameMap {
     bigGraph = {} as {
         [XandY:string]:string[]
     }
+
     portalsGraph = {} as {
         [XandY:string]:[string,number][]
     }
 
-    chunkGraph = {} as {
+    chunkPortals = {} as {
+        [XandY:string]: string[]
+    }
+
+    private chunkGraph = {} as {
         [XandYChunk:string]: {
             [XandY:string] : [string,number][]
         }
@@ -159,22 +164,18 @@ export class GameMap {
             [-1,1],[0,1],[1,1],
         ]
 
-        const chunkPortals = {} as {
-            [XandY:string]: string[]
-        }
-
         const addToGraphPortals = (x:number,y:number,x2:number,y2:number) => {
             const xChunkNumber = Math.floor(x / this.chunkW)
             const yChunkNumber = Math.floor(y / this.chunkH)
 
-            if(chunkPortals[`${xChunkNumber},${yChunkNumber}`] ) {
-                if(!chunkPortals[`${xChunkNumber},${yChunkNumber}`].includes(`${x},${y}`))
-                    chunkPortals[`${xChunkNumber},${yChunkNumber}`] = [
-                        ...chunkPortals[`${xChunkNumber},${yChunkNumber}`],
+            if(this.chunkPortals[`${xChunkNumber},${yChunkNumber}`] ) {
+                if(!this.chunkPortals[`${xChunkNumber},${yChunkNumber}`].includes(`${x},${y}`))
+                    this.chunkPortals[`${xChunkNumber},${yChunkNumber}`] = [
+                        ...this.chunkPortals[`${xChunkNumber},${yChunkNumber}`],
                         `${x},${y}`
                     ]
             } else {
-                chunkPortals[`${xChunkNumber},${yChunkNumber}`] = [
+                this.chunkPortals[`${xChunkNumber},${yChunkNumber}`] = [
                     `${x},${y}`
                 ]
             }
@@ -371,18 +372,18 @@ export class GameMap {
             }
         }
 
-        const chunkPortalskeys = Object.keys(chunkPortals)
+        const chunkPortalskeys = Object.keys(this.chunkPortals)
 
         //поиск пути из портала в другие порталы этого чанка
         for(let i = 0; i < chunkPortalskeys.length; i++) {
-            for(let j = 0; j < chunkPortals[chunkPortalskeys[i]].length; j++) {
-                const start = chunkPortals[chunkPortalskeys[i]][j]
+            for(let j = 0; j < this.chunkPortals[chunkPortalskeys[i]].length; j++) {
+                const start = this.chunkPortals[chunkPortalskeys[i]][j]
         
                 if(!this.isCurrentChunk(chunkPortalskeys[i],start))
                     continue
 
-                for(let g = 0; g < chunkPortals[chunkPortalskeys[i]].length; g++) {
-                    const end = chunkPortals[chunkPortalskeys[i]][g]
+                for(let g = 0; g < this.chunkPortals[chunkPortalskeys[i]].length; g++) {
+                    const end = this.chunkPortals[chunkPortalskeys[i]][g]
                     
                     if(j === g && !this.isCurrentChunk(chunkPortalskeys[i],end))
                         continue
@@ -402,19 +403,24 @@ export class GameMap {
             }
         }
 
-        // this.getChunkGraph("4,4")
-
         EnemyController.setSpawnPoints(spawns)
-        console.log('chunks graph')
-        console.log(this.bigGraph)
-        console.log('portals graph')
-        console.log(this.portalsGraph)
-        console.log('graph')
-        console.log(this.graph)
-        console.log('wall map')
-        console.log(this.wall_map)
-        console.log('empty map')
-        console.log(this.empty_tile)
+        // console.log('chunks graph')
+        // console.log(this.bigGraph)
+        // console.log('portals graph')
+        // console.log(this.portalsGraph)
+        // console.log('graph')
+        // console.log(this.graph)
+        // console.log('wall map')
+        // console.log(this.wall_map)
+        // console.log('empty map')
+        // console.log(this.empty_tile)
+    }
+
+    getChunkNumber(xTile:number,yTile:number) {
+        const xChunkNumber = Math.floor(xTile / this.chunkW)
+        const yChunkNumber = Math.floor(yTile / this.chunkH)
+
+        return `${xChunkNumber},${yChunkNumber}`
     }
 
     isCurrentChunk(currentChunk:string,position:string) {
@@ -433,6 +439,35 @@ export class GameMap {
         if(xSC === xChunkNumber && ySC === yChunkNumber) 
             return true
         return false
+    }
+
+    setPathToPortalsFromTileOneChunk(xTile:number,yTile:number) {
+        const currentChunk = this.getChunkNumber(xTile,yTile)
+
+        const start = `${xTile},${yTile}`
+
+        const arr = [] as string[]
+
+        for(let i = 0; i < this.chunkPortals[currentChunk].length; i++) {
+            const end = this.chunkPortals[currentChunk][i]
+
+            if(start === end) {
+                arr.push(this.chunkPortals[currentChunk][i])
+                continue
+            }
+            const [ isFound, ] = AStar(
+                this.getChunkGraph(currentChunk),
+                this.empty_tile,
+                this,
+                start, end,[]
+            )
+
+            if(isFound) {
+                arr.push(this.chunkPortals[currentChunk][i])
+            }
+        }
+
+        return arr
     }
 
     getChunkGraph(chunk:string) {

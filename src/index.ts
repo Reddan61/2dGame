@@ -29,7 +29,7 @@ let player = new Player(0,0,30,"blue",5,weapon)
 
 map.convertTextMapToWorldMap(player)
 camera.setPosition(player.X, player.Y)
-EnemyController.setNumberEnemy(0)
+EnemyController.setNumberEnemy(10)
 
 
 
@@ -53,6 +53,7 @@ const GameLoop = () => {
     }
     
     player.movement(map)
+    player.checkChunk(map)
     player.shoot()
     camera.setPosition(player.X, player.Y)
     map.renderMap(ctx,camera)

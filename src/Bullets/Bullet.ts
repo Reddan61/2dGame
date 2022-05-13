@@ -1,5 +1,5 @@
 import { Camera } from "@/Camera"
-import { GameMap } from '@/GameMap';
+import { GameMap } from '@/GameMap'
 
 export class Bullet  {
     X:number
