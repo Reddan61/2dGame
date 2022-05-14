@@ -16,7 +16,7 @@ export class GameMap {
         [1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,],
         [1,2,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
-        [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
+        [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,3,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
@@ -64,10 +64,6 @@ export class GameMap {
 
     graph = {} as {
         [XandY:string]:[string,number][]
-    }
-
-    bigGraph = {} as {
-        [XandY:string]:string[]
     }
 
     portalsGraph = {} as {
@@ -368,7 +364,6 @@ export class GameMap {
                     if(canI)
                         arr.push(`${x + directions[d][0]},${y + directions[d][1] }`)
                 }
-                // this.bigGraph[`${x},${y}`] = [...arr]
             }
         }
 
@@ -404,8 +399,6 @@ export class GameMap {
         }
 
         EnemyController.setSpawnPoints(spawns)
-        // console.log('chunks graph')
-        // console.log(this.bigGraph)
         // console.log('portals graph')
         // console.log(this.portalsGraph)
         // console.log('graph')
@@ -547,6 +540,18 @@ export class GameMap {
                 ctx.font      = "normal 14px Arial"
                 ctx.fillText(`${x},${y}`, cameraX, cameraY)
             }
+        }
+
+        const keys = Object.keys(this.portalsGraph)
+        for(let i = 0; i < keys.length; i++) {
+            const splitedPortal = keys[i].split(",")
+
+            const [cameraX,cameraY] = camera.getCords(Number(splitedPortal[0]) * this.TILESIZE,Number(splitedPortal[1]) * this.TILESIZE)
+            ctx.fillStyle = "rgba(23, 74, 200,0.5)"
+            ctx.fillRect(cameraX,
+                cameraY,
+                this.TILESIZE,this.TILESIZE)
+            ctx.fill()
         }
     }
 

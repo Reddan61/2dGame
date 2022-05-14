@@ -112,7 +112,11 @@ export class Enemy {
         const y = Math.floor(this.Y / gameMap.TILESIZE)
         const chunk = gameMap.getChunkNumber(x,y)
 
-        this.nearportals = gameMap.setPathToPortalsFromTileOneChunk(x,y)
+        if(chunk !== this.lastPositionChunk) {
+            this.lastPositionChunk = chunk
+            this.nearportals = gameMap.setPathToPortalsFromTileOneChunk(x,y)
+        }
+
     }
 
     findPath(canMoveMap: ([number,number]|null)[][],player:Player, gameMap:GameMap,ctx:CanvasRenderingContext2D,camera:Camera) {
@@ -194,10 +198,10 @@ export class Enemy {
             
             
             this.findpathParts.convertedPath = []
+            this.findpathParts.pathPortals = []
             
             const [,newPortalsPath] = AStar(newGraph,canMoveMap,gameMap,start,end,[])
             this.findpathParts.pathPortals = newPortalsPath
-            let newStart = start
 
             
             if(this.findpathParts.pathPortals[1] === end  ) {
@@ -206,12 +210,16 @@ export class Enemy {
                 if(startChunk === portalChunk) {
                     this.findpathParts.pathPortals.splice(0,1)
                 }
+            } else {
+                const splitedPortal = this.findpathParts.pathPortals[0].split(",")
+                const portalChunk = gameMap.getChunkNumber(Number(splitedPortal[0]),Number(splitedPortal[1]))
+                if(startChunk === portalChunk) {
+                    const [,newPathToPortal] = 
+                        AStar(gameMap.getChunkGraph(lastChunk),canMoveMap,gameMap,start,newPortalsPath[0],[])
+                    this.findpathParts.convertedPath = [...this.findpathParts.convertedPath,...newPathToPortal]
+                    this.findpathParts.pathPortals.splice(0,1)
+                }
             }   
-
-            const [,newPathToPortal] = 
-                AStar(gameMap.getChunkGraph(lastChunk),canMoveMap,gameMap,newStart,newPortalsPath[0],[])
-            this.findpathParts.convertedPath = [...this.findpathParts.convertedPath,...newPathToPortal]
-            // this.findpathParts.pathPortals.splice(0,1)
 
             // if(newPortalsPath[1] === end && endChunk === lastChunk) {
             //     const [,newPathToPortal] = 
@@ -248,21 +256,19 @@ export class Enemy {
         const startY = canMoveMap[Number(splitedStart[1])][Number(splitedStart[0])]![1] + gameMap.TILESIZE/2
         
         if(!this.findpathParts.convertedPath[0]) {
-            if(!this.findpathParts.convertedPath[0]) {
-                if(this.findpathParts.pathPortals[0]) {
-                    const splitedPortal = this.findpathParts.pathPortals[0].split(",")
-                    const portalChunk = gameMap.getChunkNumber(Number(splitedPortal[0]),Number(splitedPortal[1]))
-                    if(portalChunk !== startChunk) {
-                        this.findpathParts.convertedPath = [... this.findpathParts.convertedPath,this.findpathParts.pathPortals[0]]
-                        this.findpathParts.pathPortals.splice(0,1)
-                        return
-                    }
-
-                    const [,newPathToPortal] = 
-                        AStar(gameMap.getChunkGraph(lastChunk),canMoveMap,gameMap,start,this.findpathParts.pathPortals[0],[])
-                    this.findpathParts.convertedPath = [...this.findpathParts.convertedPath,...newPathToPortal]
+            if(this.findpathParts.pathPortals[0]) {
+                const splitedPortal = this.findpathParts.pathPortals[0].split(",")
+                const portalChunk = gameMap.getChunkNumber(Number(splitedPortal[0]),Number(splitedPortal[1]))
+                if(portalChunk !== startChunk) {
+                    this.findpathParts.convertedPath = [... this.findpathParts.convertedPath,this.findpathParts.pathPortals[0]]
                     this.findpathParts.pathPortals.splice(0,1)
+                    return
                 }
+
+                const [,newPathToPortal] = 
+                    AStar(gameMap.getChunkGraph(lastChunk),canMoveMap,gameMap,start,this.findpathParts.pathPortals[0],[])
+                this.findpathParts.convertedPath = [...this.findpathParts.convertedPath,...newPathToPortal]
+                this.findpathParts.pathPortals.splice(0,1)
             }
             return
         }

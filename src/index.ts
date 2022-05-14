@@ -23,13 +23,13 @@ const ctx = canvas.getContext("2d")
 
 let map = new GameMap(100)
 let camera = new Camera(0,0,canvas.width,canvas.height)
-let weapon = new Weapon(10,25,5,20,0.2)
+let weapon = new Weapon(20,25,5,10,0.1)
 let player = new Player(0,0,30,"blue",5,weapon)
 
 
 map.convertTextMapToWorldMap(player)
 camera.setPosition(player.X, player.Y)
-EnemyController.setNumberEnemy(10)
+EnemyController.setNumberEnemy(1)
 
 
 
@@ -100,7 +100,7 @@ function restart() {
     
     EnemyController.EnemyArray.splice(0, EnemyController.EnemyArray.length)
     BulletsController.bullets.splice(0, BulletsController.bullets.length)
-    EnemyController.setNumberEnemy(10)
+    EnemyController.setNumberEnemy(5)
 
     map.convertTextMapToWorldMap(player)
     camera.setPosition(player.X, player.Y)
