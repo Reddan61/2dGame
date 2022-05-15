@@ -15,7 +15,7 @@ export class Player{
     MAXHEALTH = 100
     private HEALTH = this.MAXHEALTH
 
-    private lastPosition = ""
+    private lastPositionTile = ""
     private lastPositionChunk = ""
     nearportals = [] as string[]
 
@@ -38,12 +38,23 @@ export class Player{
     checkChunk(gameMap:GameMap) {
         const x = Math.floor(this.X / gameMap.TILESIZE)
         const y = Math.floor(this.Y / gameMap.TILESIZE)
+        const tile = `${x},${y}`
         const chunk = gameMap.getChunkNumber(x,y)
-
-        if(this.lastPositionChunk !== chunk) {
+        
+        if(this.lastPositionTile !== `${x},${y}`) {
+            if(!this.nearportals.includes(this.lastPositionTile)) {
+                const positionsEnemies = EnemyController.getPositionEnemies()
+                gameMap.deleteTileToNearPortals(this.lastPositionTile,this.nearportals,positionsEnemies)
+            }
+            if(this.lastPositionChunk !== chunk) {
+                 this.nearportals = gameMap.setPathToPortalsFromTileOneChunk(x,y)
+            }
+            if(!this.nearportals.includes(tile)) {
+                gameMap.addNewConnectTileToNearPortals(tile,this.nearportals)
+            }
             this.lastPositionChunk = chunk
-
-            this.nearportals = gameMap.setPathToPortalsFromTileOneChunk(x,y)
+            this.lastPositionTile = `${x},${y}`
+            EnemyController.getTrigger(this,gameMap)
         }
     }
 

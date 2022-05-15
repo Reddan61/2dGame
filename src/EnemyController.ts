@@ -59,10 +59,24 @@ export class EnemyController {
         EnemyController.EnemyNumber = num
     }
 
+    static getTrigger(player:Player,map:GameMap) {
+        const xPlayer = Math.floor(player.X / map.TILESIZE)
+        const yPlayer = Math.floor(player.Y / map.TILESIZE)
 
-    static findPath(canMoveMap:([number,number]|null)[][],player:Player,gameMap:GameMap,ctx:CanvasRenderingContext2D,camera:Camera) {
         for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
-            EnemyController.EnemyArray[i].findPath(canMoveMap,player,gameMap,ctx,camera)
+            const xEnemy= Math.floor(EnemyController.EnemyArray[i].X / map.TILESIZE)
+            const yEnemy = Math.floor(EnemyController.EnemyArray[i].Y / map.TILESIZE)
+
+            const distToPlayer = Math.sqrt((xEnemy - xPlayer)**2 + (yEnemy - yPlayer)**2)
+            if(distToPlayer <= map.chunkW * 2 || distToPlayer <= map.chunkH * 2) {
+                EnemyController.EnemyArray[i].triggered = true
+            }
+        }
+    }
+
+    static findPath(player:Player,gameMap:GameMap,ctx:CanvasRenderingContext2D,camera:Camera) {
+        for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
+            EnemyController.EnemyArray[i].findPath(player,gameMap,ctx,camera)
         }
     }
 
@@ -100,11 +114,12 @@ export class EnemyController {
         return bool
     }
 
-    static bulletCollisionEnemy(newX:number,newY:number,radius:number,bullet:Bullet):boolean {
+    static bulletCollisionEnemy(newX:number,newY:number,radius:number,bullet:Bullet,gameMap:GameMap):boolean {
         let bool = false
 
         for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
             const enemy = EnemyController.EnemyArray[i]
+            const enemyPositions = EnemyController.getPositionOtherEnemies(EnemyController.EnemyArray[i])
 
             if(
                 newX - radius < enemy.X + enemy.RADIUS  && newX + radius  > enemy.X - enemy.RADIUS &&
@@ -112,8 +127,10 @@ export class EnemyController {
                 
             ) {
                 bool = true
-                if(EnemyController.EnemyArray[i].isDead(bullet.DAMAGE)) 
+                if(EnemyController.EnemyArray[i].isDead(bullet.DAMAGE))  {
+                    gameMap.deleteTileToNearPortals(EnemyController.EnemyArray[i].lastPositionTile,EnemyController.EnemyArray[i].nearportals,enemyPositions)
                     EnemyController.EnemyArray.splice(i,1)
+                }
                 if(bool) {
                     break
                 }
@@ -124,13 +141,22 @@ export class EnemyController {
     }
 
 
-    static getPositionOtherEnemys(enemy:Enemy) {
+    static getPositionOtherEnemies(enemy:Enemy) {
         const positions = [] as string[]
         for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
             if(enemy.X === EnemyController.EnemyArray[i].X && enemy.Y === EnemyController.EnemyArray[i].Y) {
                 continue
             }
             
+            positions.push(`${Math.floor(EnemyController.EnemyArray[i].X / 100)},${Math.floor(EnemyController.EnemyArray[i].Y / 100)}`)
+        }
+
+        return positions
+    }
+
+    static getPositionEnemies() {
+        const positions = [] as string[]
+        for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
             positions.push(`${Math.floor(EnemyController.EnemyArray[i].X / 100)},${Math.floor(EnemyController.EnemyArray[i].Y / 100)}`)
         }
 

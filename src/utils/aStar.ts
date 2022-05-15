@@ -24,7 +24,8 @@ export const AStar = (
     let isFound = false
     
     while (node) {
-        if(occupiedСells.includes(node)){
+        if(occupiedСells.includes(node) || !graph[node]){
+            console.log(node)
             processed.push(node)
             node = findLowestNode(costs,processed)
             continue

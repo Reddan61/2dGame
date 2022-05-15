@@ -17,12 +17,15 @@ export class Enemy {
     DAMAGE:number
 
     nearportals = [] as string[]
+    triggered = false
+    lastPositionTile = ""
     private lastPositionChunk = ""
     
 
     private findpathParts = {
         start:"",
         end:"",
+        lastEndChunk: "",
         pathPortals: [] as string[],
         pathToPortal : [] as string[],
         convertedPath: [] as string[]
@@ -51,7 +54,6 @@ export class Enemy {
 
     isDead(damage: number) {
         this.HEALTH -= damage
-
         return this.HEALTH <= 0
     }
 
@@ -110,17 +112,28 @@ export class Enemy {
     checkChunk(gameMap:GameMap) {
         const x = Math.floor(this.X / gameMap.TILESIZE)
         const y = Math.floor(this.Y / gameMap.TILESIZE)
+        const tile = `${x},${y}`
         const chunk = gameMap.getChunkNumber(x,y)
-
-        if(chunk !== this.lastPositionChunk) {
+        
+        if(this.lastPositionTile !== `${x},${y}`) {
+            if(!this.nearportals.includes(this.lastPositionTile)) {
+                const enemyPositions = EnemyController.getPositionEnemies()
+                gameMap.deleteTileToNearPortals(this.lastPositionTile,this.nearportals,enemyPositions)
+            }
+            if(this.lastPositionChunk !== chunk) {
+                 this.nearportals = gameMap.setPathToPortalsFromTileOneChunk(x,y)
+            }
+            if(!this.nearportals.includes(tile)) {
+                gameMap.addNewConnectTileToNearPortals(tile,this.nearportals)
+            }
             this.lastPositionChunk = chunk
-            this.nearportals = gameMap.setPathToPortalsFromTileOneChunk(x,y)
+            this.lastPositionTile = `${x},${y}`
         }
-
     }
 
-    findPath(canMoveMap: ([number,number]|null)[][],player:Player, gameMap:GameMap,ctx:CanvasRenderingContext2D,camera:Camera) {
-        const occupiedСells = EnemyController.getPositionOtherEnemys(this)
+    findPath(player:Player, gameMap:GameMap,ctx:CanvasRenderingContext2D,camera:Camera) {
+        if(!this.triggered)
+            return
 
         const startXIndex = Math.floor(this.X / gameMap.TILESIZE)
         const startYIndex = Math.floor(this.Y / gameMap.TILESIZE)
@@ -137,16 +150,13 @@ export class Enemy {
         const xStartChunk = Math.floor(startXIndex / gameMap.chunkW)
         const yStartChunk = Math.floor(startYIndex / gameMap.chunkH)
 
-        const xEndChunk = Math.floor(endXIndex / gameMap.chunkW)
-        const yEndChunk = Math.floor(endYIndex / gameMap.chunkH)
-
         const startChunk = `${xStartChunk},${yStartChunk}`
-        const endChunk = `${xEndChunk},${yEndChunk}`
-        
+
+        const occupiedСells = EnemyController.getPositionOtherEnemies(this)
         
         const distToPlayer = Math.sqrt((player.X - this.X)**2 + (player.Y - this.Y)**2)
-
-        let lastChunk = startChunk
+        
+        this.checkChunk(gameMap)
         
         if(start === end) {
             if( distToPlayer > this.RADIUS + player.RADIUS + this.SPEED)
@@ -156,51 +166,10 @@ export class Enemy {
         
             
         if(end !== this.findpathParts.end ) {
-            this.checkChunk(gameMap)
-         
-            const newGraph = {
-                ...gameMap.portalsGraph,
-            }
+            const graph = gameMap.portalsGraph
 
-            for(let i = 0; i < player.nearportals.length; i++) {
-                newGraph[player.nearportals[i]] = [
-                    ... newGraph[player.nearportals[i]], 
-                    [end, 1]
-                ]
-                if(newGraph[end]) {
-                    newGraph[end] = [
-                        ...newGraph[end],
-                        [player.nearportals[i], 1]
-                    ]
-                } else {
-                    newGraph[end] = [
-                        [player.nearportals[i], 1]
-                    ]
-                }
-            }
-
-            for(let i = 0; i < this.nearportals.length; i++) {
-                newGraph[this.nearportals[i]] = [
-                    ... newGraph[this.nearportals[i]], 
-                    [start, 1]
-                ]
-                if(newGraph[start]) {
-                    newGraph[start] = [
-                        ...newGraph[start],
-                        [this.nearportals[i], 1]
-                    ]
-                } else {
-                    newGraph[start] = [
-                        [this.nearportals[i], 1]
-                    ]
-                }
-            }
-            
-            
             this.findpathParts.convertedPath = []
-            this.findpathParts.pathPortals = []
-            
-            const [,newPortalsPath] = AStar(newGraph,canMoveMap,gameMap,start,end,[])
+            const [,newPortalsPath] = AStar(graph,gameMap.empty_tile,gameMap,start,end,[])
             this.findpathParts.pathPortals = newPortalsPath
 
             
@@ -211,49 +180,29 @@ export class Enemy {
                     this.findpathParts.pathPortals.splice(0,1)
                 }
             } else {
-                const splitedPortal = this.findpathParts.pathPortals[0].split(",")
-                const portalChunk = gameMap.getChunkNumber(Number(splitedPortal[0]),Number(splitedPortal[1]))
-                if(startChunk === portalChunk) {
-                    const [,newPathToPortal] = 
-                        AStar(gameMap.getChunkGraph(lastChunk),canMoveMap,gameMap,start,newPortalsPath[0],[])
-                    this.findpathParts.convertedPath = [...this.findpathParts.convertedPath,...newPathToPortal]
-                    this.findpathParts.pathPortals.splice(0,1)
+                if(this.findpathParts.pathPortals[0]) {
+                    const splitedPortal = this.findpathParts.pathPortals[0].split(",")
+                    const portalChunk = gameMap.getChunkNumber(Number(splitedPortal[0]),Number(splitedPortal[1]))
+                    if(startChunk === portalChunk) {
+                        const [,newPathToPortal] = 
+                            AStar(gameMap.getChunkGraph(startChunk),gameMap.empty_tile,gameMap,start,this.findpathParts.pathPortals[0],[])
+                        this.findpathParts.convertedPath = [...this.findpathParts.convertedPath,...newPathToPortal]
+                        this.findpathParts.pathPortals.splice(0,1)
+                    }
                 }
             }   
-
-            // if(newPortalsPath[1] === end && endChunk === lastChunk) {
-            //     const [,newPathToPortal] = 
-            //         AStar(gameMap.getChunkGraph(lastChunk),canMoveMap,gameMap,newStart,newPortalsPath[1],[])
-            //     this.findpathParts.convertedPath = [...this.findpathParts.convertedPath,...newPathToPortal]
-            // } else {
-            //     for(let i = 0; i < newPortalsPath.length; i++) {
-            //         const splitedPortal = newPortalsPath[i].split(",")
-            //         const portalChunk = gameMap.getChunkNumber(Number(splitedPortal[0]),Number(splitedPortal[1]))
-            //         if(portalChunk !== lastChunk) {
-            //             this.findpathParts.convertedPath = [...this.findpathParts.convertedPath,newPortalsPath[i]]
-            //             lastChunk = portalChunk
-            //             newStart = newPortalsPath[i]
-            //             continue
-            //         }
-    
-            //         const [,newPathToPortal] = 
-            //             AStar(gameMap.getChunkGraph(lastChunk),canMoveMap,gameMap,newStart,newPortalsPath[i],[])
-                    
-            //         this.findpathParts.convertedPath = [...this.findpathParts.convertedPath,...newPathToPortal]
-            //     }
-            // }
 
             this.findpathParts.start = start
             this.findpathParts.end = end
         }
       
         //test------------
-        this.drawPath(this.findpathParts.convertedPath,canMoveMap,gameMap.TILESIZE,camera,ctx)
+        this.drawPath(this.findpathParts.convertedPath,gameMap.empty_tile,gameMap.TILESIZE,camera,ctx)
         
         const splitedStart = this.findpathParts.start.split(',')
         
-        const startX = canMoveMap[Number(splitedStart[1])][Number(splitedStart[0])]![0] + gameMap.TILESIZE/2 
-        const startY = canMoveMap[Number(splitedStart[1])][Number(splitedStart[0])]![1] + gameMap.TILESIZE/2
+        const startX = gameMap.empty_tile[Number(splitedStart[1])][Number(splitedStart[0])]![0] + gameMap.TILESIZE/2 
+        const startY = gameMap.empty_tile[Number(splitedStart[1])][Number(splitedStart[0])]![1] + gameMap.TILESIZE/2
         
         if(!this.findpathParts.convertedPath[0]) {
             if(this.findpathParts.pathPortals[0]) {
@@ -266,7 +215,7 @@ export class Enemy {
                 }
 
                 const [,newPathToPortal] = 
-                    AStar(gameMap.getChunkGraph(lastChunk),canMoveMap,gameMap,start,this.findpathParts.pathPortals[0],[])
+                    AStar(gameMap.getChunkGraph(startChunk),gameMap.empty_tile,gameMap,start,this.findpathParts.pathPortals[0],[])
                 this.findpathParts.convertedPath = [...this.findpathParts.convertedPath,...newPathToPortal]
                 this.findpathParts.pathPortals.splice(0,1)
             }
@@ -274,8 +223,8 @@ export class Enemy {
         }
 
         const splitedPath = this.findpathParts.convertedPath[0].split(',')
-        const PathX = canMoveMap[Number(splitedPath[1])][Number(splitedPath[0])]![0] + gameMap.TILESIZE/2 
-        const PathY = canMoveMap[Number(splitedPath[1])][Number(splitedPath[0])]![1] + gameMap.TILESIZE/2
+        const PathX = gameMap.empty_tile[Number(splitedPath[1])][Number(splitedPath[0])]![0] + gameMap.TILESIZE/2 
+        const PathY = gameMap.empty_tile[Number(splitedPath[1])][Number(splitedPath[0])]![1] + gameMap.TILESIZE/2
         
         
         const distMeAndNextTile = Math.sqrt((this.X - PathX)**2 + (this.Y - PathY)**2)

@@ -16,7 +16,7 @@ export class GameMap {
         [1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,],
         [1,2,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
-        [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,3,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
+        [1,0,0,0,0,0,0,0, 0,0,0,3,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,1, 1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
@@ -55,7 +55,7 @@ export class GameMap {
         [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,1,],
         [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 1,0,0,0,0,0,0,1,],
-        [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 1,0,0,0,0,0,3,1,],
+        [1,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 1,0,0,0,0,0,0,1,],
         [1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,]
     ]
 
@@ -154,10 +154,15 @@ export class GameMap {
         const totalChunksInWidth = this.text_map.length/this.chunkW
         const totalChunksInHeight = this.text_map.length/this.chunkH
 
+        // const directions = [
+        //     [-1,-1],[0,-1],[1,-1],
+        //     [-1,0],       [1,0],
+        //     [-1,1],[0,1],[1,1],
+        // ]
         const directions = [
-            [-1,-1],[0,-1],[1,-1],
+                   [0,-1],
             [-1,0],       [1,0],
-            [-1,1],[0,1],[1,1],
+                   [0,1],
         ]
 
         const addToGraphPortals = (x:number,y:number,x2:number,y2:number) => {
@@ -188,185 +193,39 @@ export class GameMap {
                 ]
             }
         }
-
-        for(let x = 0; x < totalChunksInWidth; x++) {
-            for(let y = 0; y < totalChunksInHeight; y++) {
-                const arr = [] as string[]
-                for(let d = 0; d < directions.length; d++) {
-                    let canI = false
-                    switch(d) {
-                        // [-1,-1]
-                        case 0 : 
-                            if(
-                                this.text_map[y*this.chunkH][x * this.chunkW] !== 1
-                                &&
-                                this.text_map[y*this.chunkH - 1][x * this.chunkW - 1] !== 1
-                                &&
-                                this.text_map[y*this.chunkH - 1][x * this.chunkW] !== 1
-                                &&
-                                this.text_map[y*this.chunkH][x * this.chunkW - 1] !== 1
-                            ) {
-                                canI = true
-                                addToGraphPortals(
-                                    x * this.chunkW,
-                                    y*this.chunkH,
-                                    x * this.chunkW - 1,
-                                    y*this.chunkH - 1
-                                )
-                             
-                            }
-                            break
-                        // [0,-1]
-                        case 1: 
-                            for(let i = 0; i < this.chunkW; i++) { 
-                                if(
-                                    y*this.chunkH - 1 >= 0 &&
-                                    this.text_map[y*this.chunkH][x * this.chunkW + i] !== 1
-                                    &&
-                                    this.text_map[y*this.chunkH - 1][x * this.chunkW + i] !== 1
+        //поиск порталов в другие чанки
+        for(let xChunk = 0; xChunk < totalChunksInWidth; xChunk++) {
+            for(let yChunk = 0; yChunk < totalChunksInHeight; yChunk++) {
+                for(let y = yChunk * this.chunkH; y < yChunk * this.chunkH + this.chunkH; y++) {
+                    for(let x = xChunk * this.chunkW; x < xChunk * this.chunkW + this.chunkW; x++) {
+                        if(
+                            (x === xChunk * this.chunkW || y === yChunk * this.chunkH
+                            || x === xChunk * this.chunkW + this.chunkW - 1 || 
+                            y === yChunk * this.chunkH + this.chunkH - 1) &&
+                            this.text_map[y][x] !== 1
+                        ) {
+        
+                            for(let d = 0; d < directions.length; d++) {
+                                const xd = x + directions[d][0]
+                                const yd = y + directions[d][1]
+                                const chunkDirection = this.getChunkNumber(xd,yd)
+                                if( 
+                                    `${xChunk},${yChunk}` !== chunkDirection && this.text_map[yd][xd] !== 1 
                                 ) {
-                                    canI = true
                                     addToGraphPortals(
-                                        x * this.chunkW + i,
-                                        y*this.chunkH,
-                                        x * this.chunkW + i,
-                                        y*this.chunkH - 1
+                                        x,
+                                        y,
+                                        xd,
+                                        yd
                                     )
-                                   
                                 }
                             }
-                            break
-                        //[1,-1]
-                        case 2 :
-                            if(
-                                y*this.chunkH - 1 >= 0 
-                                &&
-                                this.text_map[y*this.chunkH][x * this.chunkW + this.chunkW - 1] !== 1
-                                &&
-                                this.text_map[y*this.chunkH - 1][x * this.chunkW + this.chunkW - 1] !== 1
-                                &&
-                                this.text_map[y*this.chunkH - 1][x * this.chunkW + this.chunkW] !== 1
-                                &&
-                                this.text_map[y*this.chunkH][x * this.chunkW + this.chunkW] !== 1
-                            ) {
-                                canI = true
-                                addToGraphPortals(
-                                    x * this.chunkW + this.chunkW - 1,
-                                    y*this.chunkH,
-                                    x * this.chunkW + this.chunkW,
-                                    y*this.chunkH - 1
-                                )
-                                
-                            }
-                            break
-                        // [-1,0]
-                        case 3 :
-                            for(let i = 0; i < this.chunkW; i++) {
-                                if(
-                                    x * this.chunkW - 1 >= 0 && 
-                                    this.text_map[y * this.chunkH + i][x * this.chunkW] !== 1
-                                    &&
-                                    this.text_map[y * this.chunkH + i][x * this.chunkW - 1] !== 1
-                                ) {
-                                    canI = true
-                                    addToGraphPortals(
-                                        x * this.chunkW,
-                                        y*this.chunkH + i,
-                                        x * this.chunkW - 1,
-                                        y * this.chunkH + i
-                                    )
-                                   
-                                }
-                            }
-                            break
-                        // [1,0]
-                        case 4 : 
-                            for(let i = 0; i < this.chunkW; i++) {
-                                if(
-                                    this.text_map[y * this.chunkH + i][x * this.chunkW + (this.chunkW - 1)] !== 1
-                                    &&
-                                    this.text_map[y * this.chunkH + i][(x + 1) * this.chunkW] !== 1
-                                ) {
-                                    canI = true
-                                    addToGraphPortals(
-                                        x * this.chunkW + (this.chunkW - 1),
-                                        y*this.chunkH + i,
-                                        (x + 1) * this.chunkW,
-                                        y * this.chunkH + i
-                                    )
-            
-                                }
-                            }
-                            break
-                        // [-1,1]
-                        case 5 :
-                            if(
-                                x * this.chunkW - 1 >= 0 &&
-                                this.text_map[y*this.chunkH + this.chunkH - 1][x * this.chunkW] !== 1
-                                &&
-                                this.text_map[y*this.chunkH + this.chunkH][x * this.chunkW] !== 1
-                                &&
-                                this.text_map[y*this.chunkH + this.chunkH][x * this.chunkW - 1] !== 1
-                                &&
-                                this.text_map[y*this.chunkH + this.chunkH - 1][x * this.chunkW - 1] !== 1
-                            ) {
-                                canI = true
-                                addToGraphPortals(
-                                    x * this.chunkW,
-                                    y*this.chunkH + this.chunkH - 1,
-                                    x * this.chunkW - 1,
-                                    y*this.chunkH + this.chunkH - 1
-                                )
-       
-                            }
-                            break
-                        // [0,1]
-                        case 6 :
-                            for(let i = 0; i < this.chunkW; i++) {
-                                if(
-                                    this.text_map[(y * this.chunkH) + this.chunkH - 1][x * this.chunkW + i] !== 1
-                                    &&
-                                    this.text_map[(y + 1) * this.chunkH][x * this.chunkW + i] !== 1
-                                ) {
-                                    canI = true
-                                    addToGraphPortals(
-                                        x * this.chunkW + i,
-                                        (y * this.chunkH) + this.chunkH - 1,
-                                        x * this.chunkW + i,
-                                        (y + 1) * this.chunkH
-                                    )
-                          
-                                }
-                            }
-                            break
-                        // [1,1]
-                        case 7 :
-                            if(
-                                this.text_map[y*this.chunkH + this.chunkH - 1][x * this.chunkW + this.chunkW - 1] !== 1
-                                &&
-                                this.text_map[y*this.chunkH + this.chunkH - 1][x * this.chunkW + this.chunkW] !== 1
-                                &&
-                                this.text_map[y*this.chunkH + this.chunkH][x * this.chunkW + this.chunkW - 1] !== 1
-                                &&
-                                this.text_map[y*this.chunkH + this.chunkH][x * this.chunkW + this.chunkW] !== 1
-                            ) {
-                                canI = true
-                                addToGraphPortals(
-                                    x * this.chunkW + this.chunkW - 1,
-                                    y*this.chunkH + this.chunkH - 1,
-                                    x * this.chunkW + this.chunkW,
-                                    y*this.chunkH + this.chunkH
-                                )
-                            }
-                            break
+                        }
                     }
-                    
-                    if(canI)
-                        arr.push(`${x + directions[d][0]},${y + directions[d][1] }`)
                 }
             }
         }
-
+        
         const chunkPortalskeys = Object.keys(this.chunkPortals)
 
         //поиск пути из портала в другие порталы этого чанка
@@ -399,14 +258,42 @@ export class GameMap {
         }
 
         EnemyController.setSpawnPoints(spawns)
-        // console.log('portals graph')
-        // console.log(this.portalsGraph)
+        console.log('portals graph')
+        console.log(this.portalsGraph)
         // console.log('graph')
         // console.log(this.graph)
         // console.log('wall map')
         // console.log(this.wall_map)
         // console.log('empty map')
         // console.log(this.empty_tile)
+    }
+
+    addNewConnectTileToNearPortals(tile:string,nearportals:string[]) {
+        //добавил в порталы свою точку
+        this.portalsGraph[tile] = []
+        for(let i = 0; i < nearportals.length; i++) {
+            if(!nearportals[i]) {
+                continue
+            }
+            this.portalsGraph[nearportals[i]] = [
+                ...this.portalsGraph[nearportals[i]], 
+                [tile, 1]
+            ]
+            this.portalsGraph[tile].push([nearportals[i],1])
+        }
+    }
+    deleteTileToNearPortals(tile:string,nearportals:string[],exceptions = [] as string[]) {
+        if(exceptions.includes(tile))
+            return
+        //удалил из прошлых порталов свою точку
+        for(let i = 0; i < nearportals.length; i++) {
+            if(!this.portalsGraph[nearportals[i]]) 
+                continue
+            const index = this.portalsGraph[nearportals[i]].findIndex(el => el[0] === tile)
+            if(index >= 0)
+                this.portalsGraph[nearportals[i]].splice(index,1)
+        }
+        delete this.portalsGraph[tile]
     }
 
     getChunkNumber(xTile:number,yTile:number) {

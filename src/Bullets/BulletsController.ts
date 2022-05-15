@@ -19,7 +19,7 @@ export class BulletsController {
     static moveBullets(gameMap:GameMap) {
         BulletsController.bullets.forEach((el, index) => {
             el.move()
-            if(EnemyController.bulletCollisionEnemy(el.X,el.Y,el.RADIUS,el))
+            if(EnemyController.bulletCollisionEnemy(el.X,el.Y,el.RADIUS,el,gameMap))
             {
                 BulletsController.bullets.splice(index,1)
                 return
