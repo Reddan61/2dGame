@@ -1,9 +1,13 @@
 export class Camera {
     X:number
     Y:number
+    Z = 1
 
     CAMERAWIDTH:number
     CAMERAHEIGHT:number
+
+    private maxZoom = 5
+    private minZoom = 0
 
     constructor(x:number,y:number, w:number,h:number) {
         this.X = x
@@ -17,10 +21,26 @@ export class Camera {
         this.Y = y
     }
 
-    getCords(x:number,y:number):[number,number] {
-        const newX = x - (this.X - this.CAMERAWIDTH/2)
-        const newY = y -(this.Y - this.CAMERAHEIGHT/2)
+    zoom(sens:number) {
+        const newZoom = this.Z + sens
+        if(newZoom < this.maxZoom && newZoom > this.minZoom ) {
+            this.Z = newZoom
+        }
+    }
 
-        return [newX,newY]
+    getSize(size:number) {
+        return size * this.Z
+    }
+
+    getCords(x:number,y:number):[number,number] {
+        const CAMERAWIDTH = this.CAMERAWIDTH / this.Z 
+        const CAMERAHEIGHT = this.CAMERAHEIGHT / this.Z 
+        const xleftTopPos = (this.X - CAMERAWIDTH/2) 
+        const yleftTopPos = (this.Y - CAMERAHEIGHT/2)
+
+        const newX = x  - xleftTopPos 
+        const newY = y - yleftTopPos 
+
+        return [newX * this.Z  ,newY * this.Z]
     }
 }

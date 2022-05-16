@@ -1,6 +1,6 @@
+import { GameMap } from '@/GameMap';
 import { Weapon } from './Weapon/Weapon';
 import { EnemyController } from './EnemyController';
-import { GameMap } from './GameMap';
 import { Camera } from './Camera';
 import { AStar } from './utils/aStar';
 
@@ -35,6 +35,13 @@ export class Player{
         this.Y = y
     }
 
+    getPosition(gameMap:GameMap):string {
+        const x = Math.floor(this.X / gameMap.TILESIZE)
+        const y = Math.floor(this.Y / gameMap.TILESIZE)
+
+        return `${x},${y}`
+    }
+
     checkChunk(gameMap:GameMap) {
         const x = Math.floor(this.X / gameMap.TILESIZE)
         const y = Math.floor(this.Y / gameMap.TILESIZE)
@@ -63,7 +70,7 @@ export class Player{
     }
     shoot() {
         if(this.movementKeys["0"]) {
-            this.currentWeapon.shoot(this.X,this.Y,this.ANGLE)
+            this.currentWeapon.shoot(this)
         }
     }
 
@@ -74,34 +81,36 @@ export class Player{
     draw(ctx:CanvasRenderingContext2D,camera:Camera) { 
         const [x,y] = camera.getCords(this.X,this.Y)
 
+        const size = camera.getSize(this.RADIUS)
+
         ctx.beginPath() 
         ctx.arc(x,
             y, 
-            this.RADIUS,0,Math.PI * 2,false)
+            size,0,Math.PI * 2,false)
       
         ctx.fillStyle = this.COLOR
         ctx.fill()
         
 
         //healthBar
-        const maxHealthBarWidth = this.RADIUS * 2
+        const maxHealthBarWidth = size * 2
         const percentHealth = (this.HEALTH * 100)/this.MAXHEALTH
         const percentHealthBarWidth = (maxHealthBarWidth * percentHealth) / 100
         ctx.beginPath()
-        ctx.lineWidth = 2
+        ctx.lineWidth = camera.getSize(2)
         ctx.strokeStyle = "black"
-        ctx.moveTo(x - this.RADIUS - 2,y + this.RADIUS + 14)
-        ctx.lineTo(x + this.RADIUS,y + this.RADIUS + 14)
-        ctx.lineTo(x + this.RADIUS,y + this.RADIUS + 21)
-        ctx.lineTo(x - this.RADIUS - 1,y + this.RADIUS + 21)
-        ctx.lineTo(x - this.RADIUS - 1,y + this.RADIUS + 14)
+        ctx.moveTo(x - size - camera.getSize(2),y + size + camera.getSize(14))
+        ctx.lineTo(x + size,y + size + camera.getSize(14))
+        ctx.lineTo(x + size,y + size + camera.getSize(21))
+        ctx.lineTo(x - size - camera.getSize(1),y + size + camera.getSize(21))
+        ctx.lineTo(x - size - camera.getSize(1),y + size + camera.getSize(14))
         ctx.stroke()
         ctx.closePath()
         ctx.fillStyle = "red"
-        ctx.fillRect(x - this.RADIUS,y + this.RADIUS + 15, percentHealthBarWidth, 5)
+        ctx.fillRect(x - size,y + size + camera.getSize(15), percentHealthBarWidth, camera.getSize(5))
 
         //weapon
-        this.currentWeapon.draw(ctx,x,y,this.RADIUS,this.ANGLE)
+        this.currentWeapon.draw(ctx,x,y,size,this.ANGLE,camera)
     }
 
     setPressedKey(keyCode:string) {

@@ -400,6 +400,8 @@ export class GameMap {
     }
 
     renderMap(ctx:CanvasRenderingContext2D,camera:Camera) {
+        const tileSize = camera.getSize(this.TILESIZE)
+        
         for(let y = 0; y < this.wall_map.length; y++) {
             if(!this.wall_map[y])
                 continue
@@ -407,11 +409,12 @@ export class GameMap {
                 if(!this.wall_map[y][x])
                     continue
                 const [cameraX,cameraY] = camera.getCords(this.wall_map[y][x]![0],this.wall_map[y][x]![1])
+                
                 ctx.beginPath()
                 ctx.fillStyle = "#999999"
                 ctx.fillRect(cameraX,
                     cameraY,
-                    this.TILESIZE,this.TILESIZE)
+                    tileSize,tileSize)
                 ctx.fill()
                 ctx.closePath()
             }
@@ -437,7 +440,7 @@ export class GameMap {
             ctx.fillStyle = "rgba(23, 74, 200,0.5)"
             ctx.fillRect(cameraX,
                 cameraY,
-                this.TILESIZE,this.TILESIZE)
+                tileSize,tileSize)
             ctx.fill()
         }
     }

@@ -29,7 +29,7 @@ let player = new Player(0,0,30,"blue",5,weapon)
 
 map.convertTextMapToWorldMap(player)
 camera.setPosition(player.X, player.Y)
-EnemyController.setNumberEnemy(10)
+EnemyController.setNumberEnemy(0)
 
 
 
@@ -53,15 +53,15 @@ const GameLoop = () => {
     }
     
     player.movement(map)
+    camera.setPosition(player.X, player.Y)
     player.checkChunk(map)
     player.shoot()
-    camera.setPosition(player.X, player.Y)
     map.renderMap(ctx,camera)
-    EnemyController.spawnEnemy(map)
+    EnemyController.spawnEnemy(player,map)
     EnemyController.findPath(player,map,ctx,camera)
     EnemyController.draw(ctx,camera,map)
     EnemyController.enemyAttack(player)
-    BulletsController.moveBullets(map)
+    BulletsController.moveBullets(player,map)
     BulletsController.drawBullets(ctx,camera)
     player.draw(ctx,camera)
 
@@ -83,6 +83,16 @@ document.addEventListener("mousedown", (e) => {
 document.addEventListener("mouseup", (e) => {
     player.setunPressedKey(String(e.button))
 })
+document.addEventListener("wheel", (e) => {
+    const sens = 1
+    if(e.deltaY > 0) {
+        camera.zoom(sens)
+    } else {
+        camera.zoom(-sens)
+    }
+})
+
+
 
 canvas.addEventListener("mousemove", (e) => {
     const canvasRect = canvas.getBoundingClientRect()

@@ -1,6 +1,7 @@
 import { Camera } from '@/Camera'
 import { EnemyController } from '@/EnemyController'
 import { GameMap } from '@/GameMap'
+import { Player } from '@/Player'
 import { Bullet } from './Bullet'
 
 export class BulletsController {
@@ -16,10 +17,10 @@ export class BulletsController {
         })
     }
 
-    static moveBullets(gameMap:GameMap) {
+    static moveBullets(player:Player,gameMap:GameMap) {
         BulletsController.bullets.forEach((el, index) => {
             el.move()
-            if(EnemyController.bulletCollisionEnemy(el.X,el.Y,el.RADIUS,el,gameMap))
+            if(EnemyController.bulletCollisionEnemy(el.X,el.Y,el.RADIUS,el,gameMap,player))
             {
                 BulletsController.bullets.splice(index,1)
                 return

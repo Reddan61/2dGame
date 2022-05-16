@@ -15,11 +15,13 @@ export class SpawnPoint {
 
     draw(ctx:CanvasRenderingContext2D,camera:Camera) {
         const [x,y] = camera.getCords(this.X,this.Y)
+        const size = camera.getSize(this.SIZE)
+
         ctx.beginPath()
         ctx.fillStyle = this.COLOR
         ctx.fillRect(x,
             y,
-            this.SIZE,this.SIZE)
+            size,size)
         ctx.fill()
         ctx.closePath()
     }

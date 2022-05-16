@@ -22,15 +22,19 @@ export class EnemyController {
         }
     }
 
-    static spawnEnemy(map:GameMap) {
+    static spawnEnemy(player:Player,map:GameMap) {
         if(EnemyController.EnemyNumber <= 0) {
             return
         }
+        const xPlayer = Math.floor(player.X / map.TILESIZE)
+        const yPlayer = Math.floor(player.Y / map.TILESIZE)
+
         for(let i = 0; i < EnemyController.EnemySpawnPoints.length; i++) {
             const spawn = EnemyController.EnemySpawnPoints[i]
             let bool = true
             for(let j = 0; j < EnemyController.EnemyArray.length; j++) {
                 const enemy = EnemyController.EnemyArray[j]
+
                 const leftTopX = enemy.X - enemy.RADIUS
                 const leftTopY = enemy.Y - enemy.RADIUS
                 if(
@@ -44,7 +48,18 @@ export class EnemyController {
             }
 
             if(bool) {
-                EnemyController.EnemyArray.push(new Enemy(spawn.X + spawn.SIZE / 2,spawn.Y + spawn.SIZE / 2,30,"red",3,10))
+                const xSpawn= Math.floor(EnemyController.EnemySpawnPoints[i].X / map.TILESIZE)
+                const ySpawn = Math.floor(EnemyController.EnemySpawnPoints[i].Y / map.TILESIZE)
+    
+                const distToPlayer = Math.sqrt((xSpawn - xPlayer)**2 + (ySpawn - yPlayer)**2)
+                
+                const newEnemy = new Enemy(spawn.X + spawn.SIZE / 2,spawn.Y + spawn.SIZE / 2,30,"red",3,10)
+
+                if(distToPlayer <= map.chunkW * 2 || distToPlayer <= map.chunkH * 2) {
+                    newEnemy.triggered = true
+                }
+               
+                EnemyController.EnemyArray.push(newEnemy)
                 if(--EnemyController.EnemyNumber <= 0)
                     break
             }
@@ -114,12 +129,11 @@ export class EnemyController {
         return bool
     }
 
-    static bulletCollisionEnemy(newX:number,newY:number,radius:number,bullet:Bullet,gameMap:GameMap):boolean {
+    static bulletCollisionEnemy(newX:number,newY:number,radius:number,bullet:Bullet,gameMap:GameMap,player:Player):boolean {
         let bool = false
 
         for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
             const enemy = EnemyController.EnemyArray[i]
-            const enemyPositions = EnemyController.getPositionOtherEnemies(EnemyController.EnemyArray[i])
 
             if(
                 newX - radius < enemy.X + enemy.RADIUS  && newX + radius  > enemy.X - enemy.RADIUS &&
@@ -128,7 +142,7 @@ export class EnemyController {
             ) {
                 bool = true
                 if(EnemyController.EnemyArray[i].isDead(bullet.DAMAGE))  {
-                    gameMap.deleteTileToNearPortals(EnemyController.EnemyArray[i].lastPositionTile,EnemyController.EnemyArray[i].nearportals,enemyPositions)
+                    EnemyController.EnemyArray[i].whenDead(player,gameMap)
                     EnemyController.EnemyArray.splice(i,1)
                 }
                 if(bool) {

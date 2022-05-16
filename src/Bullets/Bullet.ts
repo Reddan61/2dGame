@@ -25,11 +25,12 @@ export class Bullet  {
 
     draw(ctx:CanvasRenderingContext2D,camera:Camera) {
         const [x,y] = camera.getCords(this.X,this.Y)
+        const size = camera.getSize(this.RADIUS)
 
         ctx.beginPath() 
         ctx.arc(x,
             y, 
-            this.RADIUS,0,Math.PI * 2,false)
+            size,0,Math.PI * 2,false)
       
         ctx.fillStyle = "rgb(199, 209, 7)"
         ctx.fill()

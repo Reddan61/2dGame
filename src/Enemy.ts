@@ -54,6 +54,7 @@ export class Enemy {
 
     isDead(damage: number) {
         this.HEALTH -= damage
+
         return this.HEALTH <= 0
     }
 
@@ -74,39 +75,58 @@ export class Enemy {
     }
 
     draw(ctx:CanvasRenderingContext2D, camera:Camera) { 
-        const x = this.X - (camera.X - camera.CAMERAWIDTH/2)
-        const y = this.Y -(camera.Y - camera.CAMERAHEIGHT/2)
+        const [x,y] = camera.getCords(this.X,this.Y)
+
+        const newRadius = camera.getSize(this.RADIUS)
+
         
         ctx.beginPath() 
         ctx.arc(x,
             y, 
-            this.RADIUS,0,Math.PI * 2,false)
+            newRadius,0,Math.PI * 2,false)
         ctx.fillStyle = this.COLOR
         ctx.fill()
 
         ctx.beginPath() 
-        ctx.arc( x + this.RADIUS * Math.cos(this.ANGLE),
-            y + this.RADIUS * Math.sin(this.ANGLE), 
+        ctx.arc( x + newRadius * Math.cos(this.ANGLE),
+            y + newRadius * Math.sin(this.ANGLE), 
             3,0,Math.PI * 2,false)
         ctx.fillStyle = "black"
         ctx.fill()
         
         //healthBar
-        const maxHealthBarWidth = this.RADIUS * 2
+        const maxHealthBarWidth = newRadius * 2
         const percentHealth = (this.HEALTH * 100)/this.MAXHEALTH
         const percentHealthBarWidth = (maxHealthBarWidth * percentHealth) / 100
         ctx.beginPath()
-        ctx.lineWidth = 2
+        ctx.lineWidth = camera.getSize(2)
         ctx.strokeStyle = "black"
-        ctx.moveTo(x - this.RADIUS - 2,y + this.RADIUS + 14)
-        ctx.lineTo(x + this.RADIUS,y + this.RADIUS + 14)
-        ctx.lineTo(x + this.RADIUS,y + this.RADIUS + 21)
-        ctx.lineTo(x - this.RADIUS - 1,y + this.RADIUS + 21)
-        ctx.lineTo(x - this.RADIUS - 1,y + this.RADIUS + 14)
+        ctx.moveTo(x - newRadius - camera.getSize(2),y + newRadius + camera.getSize(14))
+        ctx.lineTo(x + newRadius,y + newRadius + camera.getSize(14))
+        ctx.lineTo(x + newRadius,y + newRadius + camera.getSize(21))
+        ctx.lineTo(x - newRadius - camera.getSize(1),y + newRadius + camera.getSize(21))
+        ctx.lineTo(x - newRadius - camera.getSize(1),y + newRadius + camera.getSize(14))
         ctx.stroke()
         ctx.closePath()
         ctx.fillStyle = "red"
-        ctx.fillRect(x - this.RADIUS,y + this.RADIUS + 15, percentHealthBarWidth, 5)
+        ctx.fillRect(x - newRadius,y + newRadius + camera.getSize(15), percentHealthBarWidth, camera.getSize(5))
+    }
+
+    whenDead(player:Player,gameMap:GameMap) {
+        const x = Math.floor(this.X / gameMap.TILESIZE)
+        const y = Math.floor(this.Y / gameMap.TILESIZE)
+        const tile = `${x},${y}`
+        
+        if(!this.nearportals.includes(this.lastPositionTile)) {
+            const enemyPositions = EnemyController.getPositionOtherEnemies(this)
+            const playerPosition = player.getPosition(gameMap)
+            const exceptions = [...enemyPositions,playerPosition]
+
+            const portals = gameMap.setPathToPortalsFromTileOneChunk(x,y)
+
+            gameMap.deleteTileToNearPortals(tile,portals,exceptions)
+        }
+
     }
 
     checkChunk(gameMap:GameMap) {
@@ -117,7 +137,7 @@ export class Enemy {
         
         if(this.lastPositionTile !== `${x},${y}`) {
             if(!this.nearportals.includes(this.lastPositionTile)) {
-                const enemyPositions = EnemyController.getPositionEnemies()
+                const enemyPositions = EnemyController.getPositionOtherEnemies(this)
                 gameMap.deleteTileToNearPortals(this.lastPositionTile,this.nearportals,enemyPositions)
             }
             if(this.lastPositionChunk !== chunk) {
@@ -251,24 +271,29 @@ export class Enemy {
    
 
     drawPath(convertedPath:string[],canMoveMap:([number,number]|null)[][],tileSize:number,camera:Camera,ctx:CanvasRenderingContext2D) {
+        const [newX,newY] = camera.getCords(this.X,this.Y)
+        
+
         const lastPosition = {
-            x:this.X - (camera.X - camera.CAMERAWIDTH/2),
-            y:this.Y - (camera.Y - camera.CAMERAHEIGHT/2)
+            x:newX,
+            y:newY
         }
         
         for(let i = 0; i<convertedPath.length;i++) {
             const splited = convertedPath[i].split(',')
-            const X = canMoveMap[Number(splited[1])][Number(splited[0])]![0] + tileSize/2
-            const Y = canMoveMap[Number(splited[1])][Number(splited[0])]![1] + tileSize/2
+            const xTile = canMoveMap[Number(splited[1])][Number(splited[0])]![0] + tileSize/2
+            const yTile = canMoveMap[Number(splited[1])][Number(splited[0])]![1] + tileSize/2
+
+            const [newXTile,newYTile] = camera.getCords(xTile,yTile)
 
             ctx.beginPath()
-            ctx.lineWidth = 2
+            ctx.lineWidth = camera.getSize(2)
             ctx.strokeStyle = 'green'
             ctx.moveTo(lastPosition.x, lastPosition.y)
-            ctx.lineTo(X - (camera.X - camera.CAMERAWIDTH/2), Y -(camera.Y - camera.CAMERAHEIGHT/2))
+            ctx.lineTo(newXTile, newYTile)
             ctx.stroke()
-            lastPosition.x = X - (camera.X - camera.CAMERAWIDTH/2)
-            lastPosition.y = Y -(camera.Y - camera.CAMERAHEIGHT/2)
+            lastPosition.x = newXTile
+            lastPosition.y = newYTile
         }
     }
 }
