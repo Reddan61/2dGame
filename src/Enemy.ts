@@ -3,6 +3,7 @@ import { Player } from '@/Player';
 import { Camera } from "./Camera"
 import { EnemyController } from './EnemyController';
 import { AStar } from './utils/aStar';
+import { IGlobalKeys } from './ConfigKeys';
 
 
 export class Enemy {
@@ -90,7 +91,7 @@ export class Enemy {
         ctx.beginPath() 
         ctx.arc( x + newRadius * Math.cos(this.ANGLE),
             y + newRadius * Math.sin(this.ANGLE), 
-            3,0,Math.PI * 2,false)
+            camera.getSize(3),0,Math.PI * 2,false)
         ctx.fillStyle = "black"
         ctx.fill()
         
@@ -151,7 +152,7 @@ export class Enemy {
         }
     }
 
-    findPath(player:Player, gameMap:GameMap,ctx:CanvasRenderingContext2D,camera:Camera) {
+    findPath(player:Player, gameMap:GameMap,ctx:CanvasRenderingContext2D,camera:Camera,keysConfig:IGlobalKeys) {
         if(!this.triggered)
             return
 
@@ -216,8 +217,9 @@ export class Enemy {
             this.findpathParts.end = end
         }
       
-        //test------------
-        this.drawPath(this.findpathParts.convertedPath,gameMap.empty_tile,gameMap.TILESIZE,camera,ctx)
+        if(keysConfig.KeyI) {
+            this.drawPath(this.findpathParts.convertedPath,gameMap.empty_tile,gameMap.TILESIZE,camera,ctx)
+        }
         
         const splitedStart = this.findpathParts.start.split(',')
         

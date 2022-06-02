@@ -1,16 +1,17 @@
+import { IGlobalKeys } from './ConfigKeys';
 import { SpawnPoint } from './SpawnPoint';
 import { Bullet } from './Bullets/Bullet';
 import { Camera } from './Camera';
 import { Enemy } from './Enemy';
 import { GameMap } from './GameMap';
 import { Player } from './Player';
+import { configType } from './Config';
 
 
 
 export class EnemyController {
     static EnemyArray: Enemy[] = []
     private static EnemySpawnPoints = [] as SpawnPoint[]
-    private static EnemyNumber = 0
 
 
     static draw(ctx: CanvasRenderingContext2D, camera:Camera,map:GameMap) {
@@ -22,25 +23,37 @@ export class EnemyController {
         }
     }
 
-    static spawnEnemy(player:Player,map:GameMap) {
-        if(EnemyController.EnemyNumber <= 0) {
-            return
-        }
+    static checkTrigger(player:Player,map:GameMap,config:configType) {
         const xPlayer = Math.floor(player.X / map.TILESIZE)
         const yPlayer = Math.floor(player.Y / map.TILESIZE)
 
+        const triggerX = config.triggerEnemyTilesX
+        const triggerY = config.triggerEnemyTilesY
+
+        for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
+            const xEnemy= Math.floor(EnemyController.EnemyArray[i].X / map.TILESIZE)
+            const yEnemy = Math.floor(EnemyController.EnemyArray[i].Y / map.TILESIZE)
+
+            const distToPlayer = Math.sqrt((xEnemy - xPlayer)**2 + (yEnemy - yPlayer)**2)
+    
+            if(
+                distToPlayer <= triggerX || distToPlayer <= triggerY) {
+                
+                EnemyController.EnemyArray[i].triggered = true
+            }
+        }
+
+    }
+
+    static spawnEnemyInSpawnPoint(map:GameMap) {
         for(let i = 0; i < EnemyController.EnemySpawnPoints.length; i++) {
             const spawn = EnemyController.EnemySpawnPoints[i]
             let bool = true
             for(let j = 0; j < EnemyController.EnemyArray.length; j++) {
                 const enemy = EnemyController.EnemyArray[j]
 
-                const leftTopX = enemy.X - enemy.RADIUS
-                const leftTopY = enemy.Y - enemy.RADIUS
                 if(
-                    leftTopX < spawn.X + map.TILESIZE  && leftTopX + (enemy.RADIUS*2)  > spawn.X &&
-		            leftTopY < spawn.Y + map.TILESIZE && leftTopY + (enemy.RADIUS*2) > spawn.Y
-                ) 
+                    spawn.checkCollision(enemy.X,enemy.Y,enemy.RADIUS,map)) 
                 {
                     bool = false
                     break
@@ -48,50 +61,27 @@ export class EnemyController {
             }
 
             if(bool) {
-                const xSpawn= Math.floor(EnemyController.EnemySpawnPoints[i].X / map.TILESIZE)
-                const ySpawn = Math.floor(EnemyController.EnemySpawnPoints[i].Y / map.TILESIZE)
-    
-                const distToPlayer = Math.sqrt((xSpawn - xPlayer)**2 + (ySpawn - yPlayer)**2)
-                
-                const newEnemy = new Enemy(spawn.X + spawn.SIZE / 2,spawn.Y + spawn.SIZE / 2,30,"red",3,10)
-
-                if(distToPlayer <= map.chunkW * 2 || distToPlayer <= map.chunkH * 2) {
-                    newEnemy.triggered = true
-                }
-               
-                EnemyController.EnemyArray.push(newEnemy)
-                if(--EnemyController.EnemyNumber <= 0)
-                    break
+                const newEnemy = spawn.spawn()
+                if(newEnemy)
+                    EnemyController.EnemyArray.push(newEnemy)
             }
         }
+    }
+
+    static spawnSingleEnemy(
+        x:number,y:number,radius:number,color:string,speed:number,
+        damage:number,health = 100
+    ) {
+        EnemyController.EnemyArray.push(new Enemy(x,y,radius,color,speed,damage,health))
     }
 
     static setSpawnPoints(points:  SpawnPoint[]) {
         EnemyController.EnemySpawnPoints = [...points]
     }
 
-    static setNumberEnemy(num:number) {
-        EnemyController.EnemyNumber = num
-    }
-
-    static getTrigger(player:Player,map:GameMap) {
-        const xPlayer = Math.floor(player.X / map.TILESIZE)
-        const yPlayer = Math.floor(player.Y / map.TILESIZE)
-
+    static findPath(player:Player,gameMap:GameMap,ctx:CanvasRenderingContext2D,camera:Camera,keysConfig:IGlobalKeys) {
         for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
-            const xEnemy= Math.floor(EnemyController.EnemyArray[i].X / map.TILESIZE)
-            const yEnemy = Math.floor(EnemyController.EnemyArray[i].Y / map.TILESIZE)
-
-            const distToPlayer = Math.sqrt((xEnemy - xPlayer)**2 + (yEnemy - yPlayer)**2)
-            if(distToPlayer <= map.chunkW * 2 || distToPlayer <= map.chunkH * 2) {
-                EnemyController.EnemyArray[i].triggered = true
-            }
-        }
-    }
-
-    static findPath(player:Player,gameMap:GameMap,ctx:CanvasRenderingContext2D,camera:Camera) {
-        for(let i = 0; i < EnemyController.EnemyArray.length; i++) {
-            EnemyController.EnemyArray[i].findPath(player,gameMap,ctx,camera)
+            EnemyController.EnemyArray[i].findPath(player,gameMap,ctx,camera,keysConfig)
         }
     }
 

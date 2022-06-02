@@ -21,7 +21,8 @@
     "webpack-dev-server": "^4.8.1"
   },
   "scripts": {
-    "dev": "npx webpack serve --config ./config/webpack.config.dev.js"
+    "dev": "npx webpack serve --config ./config/webpack.config.dev.js",
+    "prod": "npx webpack --config ./config/webpack.config.prod.js"
   },
   "author": "",
   "license": "ISC",

@@ -61,7 +61,6 @@ export class Player{
             }
             this.lastPositionChunk = chunk
             this.lastPositionTile = `${x},${y}`
-            EnemyController.getTrigger(this,gameMap)
         }
     }
 
@@ -75,6 +74,8 @@ export class Player{
     }
 
     getDamage(damage:number) {
+        if(this.HEALTH <= 0) 
+            return
         this.HEALTH -= damage
     }
 
@@ -130,7 +131,7 @@ export class Player{
         this.ANGLE = Math.atan2(y,x)
     }
 
-    movement(map: GameMap) {
+    movement(map: GameMap) {        
         if(this.movementKeys.KeyW) {
             const speed = map.returnNewSpeed(this.X,this.Y, this.X,this.Y - this.SPEED,this.RADIUS) 
             if(!EnemyController.collisionEnemyForPlayer(this.X,this.Y, this.X,this.Y - this.SPEED,this.RADIUS))    
