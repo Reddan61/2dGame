@@ -11,8 +11,6 @@ import { config } from './Config';
 import showControlls from './utils/showControlls';
 
 
-// canvas.width = 400
-// canvas.height = 400
 
 let currentfps = 0
 let lastSecfps = 0
@@ -29,9 +27,12 @@ let camera = new Camera(0,0,canvas.width,canvas.height)
 let weapon = new Weapon(20,25,5,10,0.1)
 let player = new Player(0,0,30,"blue",5,weapon)
 
+let currentGameLoopID:number
 
 map.convertTextMapToWorldMap(player)
 camera.setPosition(player.X, player.Y)
+
+
 
 function restart() {
     map = new GameMap(100)
@@ -44,7 +45,9 @@ function restart() {
 
     map.convertTextMapToWorldMap(player)
     camera.setPosition(player.X, player.Y)
-
+    console.log(currentGameLoopID);
+    
+    cancelAnimationFrame(currentGameLoopID)
     GameLoop()
 }
 
@@ -85,7 +88,7 @@ const GameLoop = () => {
     showFPS(ctx,lastSecfps)
     showControlls(ctx)
     
-    requestAnimationFrame(GameLoop)
+    currentGameLoopID = requestAnimationFrame(GameLoop)
 }
 
 document.addEventListener("keydown", (e) => {

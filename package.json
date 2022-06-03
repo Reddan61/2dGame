@@ -3,12 +3,14 @@
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
+  "homepage": "https://reddan61.github.io/2dGame/",
   "devDependencies": {
     "@babel/core": "^7.17.9",
     "@babel/preset-env": "^7.16.11",
     "babel-loader": "^8.2.4",
     "clean-webpack-plugin": "^4.0.0",
     "css-loader": "^6.7.1",
+    "gh-pages": "^4.0.0",
     "html-webpack-plugin": "^5.5.0",
     "postcss-loader": "^6.2.1",
     "sass": "^1.50.0",
@@ -22,7 +24,9 @@
   },
   "scripts": {
     "dev": "npx webpack serve --config ./config/webpack.config.dev.js",
-    "prod": "npx webpack --config ./config/webpack.config.prod.js"
+    "prod": "npx webpack --config ./config/webpack.config.prod.js",
+    "deploy": "gh-pages -d dist",
+    "predeploy": "npm run prod"
   },
   "author": "",
   "license": "ISC",
