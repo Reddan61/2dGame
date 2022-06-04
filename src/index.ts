@@ -45,7 +45,6 @@ function restart() {
 
     map.convertTextMapToWorldMap(player)
     camera.setPosition(player.X, player.Y)
-    console.log(currentGameLoopID);
     
     cancelAnimationFrame(currentGameLoopID)
     GameLoop()
